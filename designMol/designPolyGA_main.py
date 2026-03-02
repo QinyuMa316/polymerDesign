@@ -91,8 +91,8 @@ if __name__ == "__main__":
     POP_SIZE = 40
     # target = 'multi'
     random.seed(2025)
-    # version = 'GA'
-    version = 'NSGA2'
+    version = 'GA'
+    # version = 'NSGA2'
 
     main_dir = f'result{version}'
     if 'NS' not in version:
@@ -104,13 +104,16 @@ if __name__ == "__main__":
     # ========= 1. 核心骨架 & 替换位点 =========
     df = pd.read_csv('data_mod/polyimides_pred_prop_base_str_std.csv')
     scaffolds = df['scaffold'].tolist()
+    scaffolds_unique = list(dict.fromkeys(scaffolds))
+    print(len(scaffolds), "->", len(scaffolds_unique))
+    # 12 -> 11
     base_polymers = []
     # [
     #  {"id":xx, "smiles":xxx, "tg":xx, "eps":xx, "sa":xx},
     #  {....}
     # ]
     opt_results = []
-    for id, scaffold in tqdm(enumerate(scaffolds)):
+    for id, scaffold in tqdm(enumerate(scaffolds_unique)):
         print('\n'+'='*50)
         print(f'id: {id}, Base polymer: {scaffold}')
         # core_smiles = "*c1ccc(Oc2ccc(-n3c(=O)c4cc5c(=O)n(*)c(=O)c5cc4c3=O)cc2)cc1"

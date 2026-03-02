@@ -477,7 +477,7 @@ if __name__ == '__main__':
 
     n_core = 4
     # note: test version 1k data only
-    data_path = 'data/PI1M_v2.csv'
+    data_path = 'data/PI1M.csv'
     attrfg_dir = 'attrfg1m'  # without NO2
     os.makedirs(attrfg_dir, exist_ok=True)
 

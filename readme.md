@@ -1,5 +1,5 @@
 
-# Code for: Multi-Objective Optimization for High-Performance Polymer Materials via NSGA-II and Graph Attention Network
+# Code for: Multi-Objective Inverse Design of High-Performance Polymers via Contrastive-Pretrained Graph Attention Networks and NSGA-II
  
 
 ## Requirements
@@ -13,8 +13,12 @@ conda install -y -c pytorch -c pyg -c conda-forge \
 conda install -y "numpy<2"
 ```
 
+## Notation
 
+- Tg denotes the glass transition temperature \(T_g\).
+- EPS (epsilon) denotes the dielectric constant \(k\) (also written as \(\varepsilon\)).
 
+## Data
 
-
+The training data is in `data_.zip`.
 

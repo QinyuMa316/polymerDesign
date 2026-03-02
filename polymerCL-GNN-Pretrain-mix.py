@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # ----------------------------------------------------------------------------------------
 
     # ========== 对比学习数据集 ==========
-    data_path_pre = 'data/PI1M_v2.csv'
+    data_path_pre = 'data/PI1M.csv'
     smiles_col = 'SMILES'
     data_pre = pd.read_csv(data_path_pre)
     smiles_list_pre = data_pre[smiles_col].tolist()
