@@ -15,8 +15,8 @@ conda install -y "numpy<2"
 
 ## Notation
 
-- Tg denotes the glass transition temperature \(T_g\).
-- EPS (epsilon) denotes the dielectric constant \(k\) (also written as \(\varepsilon\)).
+- Tg denotes the glass transition temperature $T_g$.
+- EPS (epsilon) denotes the dielectric constant $k$ (also written as $\varepsilon$).
 
 ## Data
 
