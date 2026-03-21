@@ -21,5 +21,5 @@ conda install -y "numpy<2"
 
 ## Data
 
-The training data is in `data_.zip`.
+The training data is in 10.6084/m9.figshare.31493752
 
