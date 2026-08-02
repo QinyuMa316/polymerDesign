@@ -20,7 +20,7 @@ The datasets used in this project are publicly available at:
 https://doi.org/10.6084/m9.figshare.31493752
 
 The data directory is organized as follows:
-
+```
 polyDesign_data
 ├── data_modification
 │   └── polyimides_pred_prop_base_str_std.csv
@@ -28,7 +28,7 @@ polyDesign_data
     ├── PI1M.csv
     ├── EPS_combined.csv
     └── Tg_combined.csv
-
+```
 The files are used as follows:
 
 - `PI1M.csv` is used for model pretraining.
