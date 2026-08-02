@@ -19,7 +19,10 @@ The datasets used in this project are publicly available at:
 
 https://doi.org/10.6084/m9.figshare.31493752
 
+Alternatively, you can access them directly from the polyDesign_data directory in this repository.
+
 The data directory is organized as follows:
+
 ```
 polyDesign_data
 ├── data_modification
@@ -29,6 +32,7 @@ polyDesign_data
     ├── EPS_combined.csv
     └── Tg_combined.csv
 ```
+
 The files are used as follows:
 
 - `PI1M.csv` is used for model pretraining.
