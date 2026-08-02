@@ -1,7 +1,7 @@
 import os
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.preprocessing import StandardScaler
+import seaborn as sns
 from umap import UMAP
 import pandas as pd
 import numpy as np
@@ -97,10 +97,10 @@ def plot_pred_vs_true_all(y_true_train, y_pred_train,
                           ):
     plt.rcParams.update({
         'font.family': 'Arial',
-        'axes.titlesize': 14,  # 主标题
-        'axes.labelsize': 14,  # 横纵轴标题
-        'xtick.labelsize': 12,  # x刻度
-        'ytick.labelsize': 12  # y刻度
+        'axes.titlesize': 15,  # 主标题
+        'axes.labelsize': 15,  # 横纵轴标题
+        'xtick.labelsize': 13,  # x刻度
+        'ytick.labelsize': 13  # y刻度
     })
 
     os.makedirs(folder_name, exist_ok=True)

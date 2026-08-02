@@ -25,27 +25,43 @@ def parse_arguments():
     Parse command-line arguments.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('--target', type=float, default=1e-4)
     parser.add_argument('--pretrain_epoch', type=int, required=True)
     parser.add_argument('--model_dir', type=str, required=True)
+
+    parser.add_argument('--target', type=str, required=True, choices=['EPS', 'Tg'])
+
+    parser.add_argument('--n_layers', type=int, default=3)
+    parser.add_argument('--hidden_dim', type=int, default=128)
+    parser.add_argument('--dropout', type=float, default=0.02)
+    parser.add_argument('--lr', type=float, required=True)
+
+    parser.add_argument('--batch_size', type=int, required=True)
+    parser.add_argument('--n_enum', type=int, required=True)
 
     return parser.parse_args()
 
 if __name__ == '__main__':
 
-    # args = parse_arguments()
-    # target_col = args.target
-    # PRE_TREAIN_EPOCH = args.pretrain_epoch
-    # model_dir = args.model_dir
+    args = parse_arguments()
+    target_col = args.target
+    PRE_TREAIN_EPOCH = args.pretrain_epoch
+    model_dir = args.model_dir
 
-    target_col = 'Tg'
-    PRE_TREAIN_EPOCH = 50
-    model_dir = 'models_polymer'
+    # target_col = 'Tg'
+    # PRE_TREAIN_EPOCH = 50
+    # model_dir = 'models_polymer'
 
     # target_col = 'EPS'
     # PRE_TREAIN_EPOCH = 50
-    n_enum = 12
-    batch_size = 4
+
+    # batch_size = 4
+    # n_enum = 12
+    n_layers = args.n_layers
+    hidden_dim = args.hidden_dim
+    dropout = args.dropout
+    LR = args.lr
+    batch_size = args.batch_size
+    n_enum = args.n_enum
 
     # tg - seed = 56, eps - seed = 88
     if target_col == 'Tg':
@@ -62,7 +78,7 @@ if __name__ == '__main__':
 
     print(f'Seed: {seed}, Trainning: {training}, Testing: {testing}')
 
-    LR = 1e-4
+    # LR = 1e-5
     EPOCH = 1000
     WD = 1e-5
     # batch_size = 4
@@ -73,16 +89,16 @@ if __name__ == '__main__':
     # model_dir = 'models_polymer'
     # os.makedirs(model_dir, exist_ok=True)
     # ----------------------------------------------------------------------------------------
-    n_layers = 3
-    hidden_dim = 128
+    # n_layers = 3
+    # hidden_dim = 128
     num_heads = 4
-    dropout = 0.2
+    # dropout = 0.2
     print(f'Model Architecture: Num Layer: {n_layers}, Hidden Dim: {hidden_dim}, Num Heads: {num_heads}')
     model = GATModel(hidden_dim=hidden_dim, dropout=dropout, num_layers=n_layers)
     # ----------------------------------------------------------------------------------------
 
     smiles_col = 'SMILES'
-    data_path = f'data/{target_col}_combined.csv'
+    data_path = f'polyDesign_data/data_train/{target_col}_combined.csv'
     print(f'Target: {target_col}')
     data = pd.read_csv(data_path)
     smiles_list = data[smiles_col].tolist()
@@ -104,7 +120,7 @@ if __name__ == '__main__':
     if not os.path.exists(model_path):
         print(f'Fail to find model at {model_path}, start to load pretained model')
         # note:
-        pre_model_path = f'{model_dir}/pretrain_encoder_150_{PRE_TREAIN_EPOCH}epoch.pth'
+        pre_model_path = f'{model_dir}/pretrain_encoder_{PRE_TREAIN_EPOCH}epoch.pth'
         if os.path.exists(pre_model_path):
             checkpoint = torch.load(pre_model_path, map_location=device)
             model.load_state_dict(checkpoint['model_state_dict'])

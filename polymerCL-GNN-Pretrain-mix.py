@@ -15,7 +15,12 @@ def parse_arguments():
     Parse command-line arguments.
     """
     parser = argparse.ArgumentParser()
+    parser.add_argument('--n_layers', type=int, default=3)
+    parser.add_argument('--hidden_dim', type=int, default=128)
+    parser.add_argument('--dropout', type=float, default=0.02)
     parser.add_argument('--lr_pre', type=float, default=1e-4)
+
+    parser.add_argument('--epoch_pre', type=int, default=50)
     parser.add_argument('--batch_size_pre', type=int, default=256)
     parser.add_argument('--model_dir', type=str, required=True)
     return parser.parse_args()
@@ -34,16 +39,20 @@ if __name__ == '__main__':
     print(f'Using device: {device}')
     os.makedirs(model_dir, exist_ok=True)
     # ----------------------------------------------------------------------------------------
-    n_layers = 3
-    hidden_dim = 128
+    # n_layers = 3
+    # hidden_dim = 128
+    n_layers = args.n_layers
+    hidden_dim = args.hidden_dim
     num_heads = 4
-    dropout = 0.2
+    # dropout = 0.2
+    dropout = args.dropout
     print(f'Model Architecture: Num Layer: {n_layers}, Hidden Dim: {hidden_dim}, Num Heads: {num_heads}')
     model = GATModel(hidden_dim=hidden_dim, dropout=dropout, num_layers=n_layers)
     model.to(device)
     # ----------------------------------------------------------------------------------------
     PRETRAIN = True
-    PRE_EPOCH = 100
+    # PRE_EPOCH = 100
+    PRE_EPOCH = args.epoch_pre
     wd_pre = 1e-5
     # lr_pre = 1e-4
     # batch_size_pre = 256
@@ -52,7 +61,7 @@ if __name__ == '__main__':
     # ----------------------------------------------------------------------------------------
 
     # ========== 对比学习数据集 ==========
-    data_path_pre = 'data/PI1M.csv'
+    data_path_pre = 'polyDesign_data/data_train/PI1M.csv'
     smiles_col = 'SMILES'
     data_pre = pd.read_csv(data_path_pre)
     smiles_list_pre = data_pre[smiles_col].tolist()
@@ -64,7 +73,7 @@ if __name__ == '__main__':
     train_loader_pre, _, _ = pre_loader.get_split_loaders_cl(test_size=0, val_size=0, )
     # ----------------------------------------------------------------------------------------
 
-    pre_model_path = f'{model_dir}/pretrain_encoder.pth'
+    pre_model_path = f'{model_dir}/pretrain_encoder_{PRE_EPOCH}epoch.pth'
     # if os.path.exists(pre_model_path):
     #     checkpoint = torch.load(pre_model_path, map_location=device)
     #     model.load_state_dict(checkpoint['model_state_dict'])

@@ -5,7 +5,6 @@ from typing import Tuple, List, Dict, Any
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import json
-import pandas as pd
 from rdkit import Chem
 from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit.Chem.rdchem import KekulizeException
@@ -24,7 +23,7 @@ model = GATModel(num_node_features=7, num_edge_features=6,
 
 def predict_property(smiles: str, target="Tg") -> float:
     suffix = "_cl_50epo_aug12"
-    mdl_path = f"../models_polymer/best_model_{target}{suffix}.pth"
+    mdl_path = f"models_polymer/best_model_{target}{suffix}.pth"
     chkpt = torch.load(mdl_path, map_location=device)
     model.load_state_dict(chkpt["model_state_dict"])
     model.to(device).eval()
@@ -458,10 +457,17 @@ class NSGA2():
         绘制所有代的整体散点 & 每代 Pareto Front 0 演化轨迹（颜色随代数变化）
         """
 
+        # plt.rcParams.update({
+        #     'font.size': 15,
+        #     'axes.titlesize': 15,
+        #     'figure.titlesize': 15
+        # })
         plt.rcParams.update({
-            'font.size': 12,
-            'axes.titlesize': 12,
-            'figure.titlesize': 12
+            'font.family': 'Arial',
+            'axes.titlesize': 15,  # 主标题
+            'axes.labelsize': 15,  # 横纵轴标题
+            'xtick.labelsize': 13,  # x刻度
+            'ytick.labelsize': 13  # y刻度
         })
 
         out_png = f"{self.dir_folder}/pareto_frontier_evolution.png"
@@ -524,15 +530,15 @@ class NSGA2():
         # -----------------------------------------------------------
         # ③ 坐标轴 / 标题 / colorbar
         # -----------------------------------------------------------
-        ax.set_xlabel("k (minimize ←)")
-        ax.set_ylabel("Tg (maximize →)")
+        ax.set_xlabel(r"$k$ (minimize ←)")
+        ax.set_ylabel(r"$T_g$ (maximize →)")
         ax.set_title("Pareto Frontier Evolution Across Generations")
         # ax.grid(True) # 网格关闭
 
         # Base Molecular 点必须先画！
         ax.scatter(self.base_eps, self.base_tg,
                    color='red', marker='*', s=100,
-                   label='Base Molecular')
+                   label='Base Molecule')
 
         # colorbar：对应 generation 变化
         cbar = fig.colorbar(sm, ax=ax, pad=0.02)
@@ -827,118 +833,118 @@ class NSGA2():
         # ———— hyperparam_v2_1_22 修改
 
 
-if __name__ == "__main__":
-
-    from designPolyGA_main import frag_smiles
-    RUN_FROM_SCRATCH = True
-
-    N_GEN = 50
-    POP_SIZE = 50
-    # target = 'multi'
-    dir_folder = f'NSGA2_{N_GEN}GEN_{POP_SIZE}POP'
-
-    # ========= 1. 核心骨架 & 替换位点 =========
-    base_smi = "*c1ccc(Oc2ccc(-n3c(=O)c4cc5c(=O)n(*)c(=O)c5cc4c3=O)cc2)cc1"
-    # base_mol = Chem.MolFromSmiles(base_smi)
-    random.seed(2025)
-    base_tg = predict_property(base_smi, 'Tg')
-    base_eps = predict_property(base_smi, 'EPS')
-    base_sa = calSAScore(base_smi)
-    print(f"Base polymer Tg: {base_tg:.1f} K, k: {base_eps:.3f}, SAScore: {base_sa:.2f}")
-    GA = NSGA2(base_smi, base_tg, base_eps,
-               frag_smiles, # target,
-               dir_folder, N_GEN, POP_SIZE)
-    # best_smi, best_prop = GA.run_ga()
-
-    if RUN_FROM_SCRATCH:
-        print('Running NSGA-II ...')
-        # 如果你想看“rank+crowding 如何选父母”的全过程，可开启下面两个开关
-        # ———— hyperparam_v2_1_22 修改
-        pareto_solutions = GA.run_ga(
-            plot=True,
-            # debug_select=True,      # True 会逐次打印 tournament 选择细节（输出很多）
-            # save_parent_viz=True     # True 会每代输出 Pareto前沿+父母选择图
-        )
-        print("=== NSGA-II Pareto Frontier ===")
-        print(f"Frontier size = {len(pareto_solutions)}")
-        # pareto_solutions
-        # "smiles": aux["smiles"],
-        # "tg": aux["tg"],
-        # "eps": aux["eps"],
-        # "obj": final_objs[idx],  # (eps, -tg)
-        # "rank": 0
-
-        delta_tg_list = []
-        delta_eps_list = []
-        sa_list = []
-        # print(f'Show top-5 mols:')
-        # for i, sol in enumerate(pareto_solutions[:5]):  # 只打印前5个
-        for i, sol in enumerate(pareto_solutions):  # 只打印前5个
-            cur_tg = sol["tg"]
-            cur_eps = sol["eps"]
-            cur_smi = sol["smiles"]
-            cur_sa = calSAScore(cur_smi)
-            delta_tg = (cur_tg - base_tg) / base_tg * 100
-            delta_eps = (cur_eps - base_eps) / base_eps * 100
-            delta_tg_list.append(delta_tg)
-            delta_eps_list.append(delta_eps)
-            sa_list.append(cur_sa)
-
-            print(f"ID: {i} Tg: {cur_tg:.1f} K, k: {cur_eps:.2f}, SAScore: {cur_sa:.2f}")
-            print(f"SMILES: {sol['smiles']}")
-            print(f'Improvement ratio: Tg: {delta_tg:.2f}%, k: {delta_eps:.2f}%')
-
-        avg_tg = sum(delta_tg_list) / len(delta_tg_list)
-        avg_eps = sum(delta_eps_list) / len(delta_eps_list)
-        avg_sa = sum(sa_list) / len(sa_list)
-
-        # print("=== Average Improvement ===")
-        print(f"Avg Tg improvement: {avg_tg:.2f}%")
-        print(f"Avg k decrease: {avg_eps:.2f}%")
-        print(f"Avg SAScore: {avg_sa:.2f}")
-
-        # ———— hyperparam_v2_1_22 修改
-
-    plotgm = PlotGenMols(base_eps, base_tg, dir_folder)
-    plotgm.plotKDEbyGenerations('tg')
-    plotgm.plotKDEbyGenerations('eps')
-    plotgm.plotScatterbyGenerations()
-    plotgm.visualize_gen_bests(mols_per_row=5)
-    plotgm.visualize_pareto_frontier(mols_per_row=5)
-
-    # NSGA2v2
-    # ———— v2:
-    # 每一代输出 Pareto rank 和 crowding distance
-    # 打印每次锦标赛（tournament）比较的两名选手 + 胜者
-    # 把“父母选择过程”写成 jsonl 日志
-    # 画图：在 (EPS, Tg) 空间里显示每代的前沿 + crowding，并用箭头标出被选作父代的点
-    # todo: 图片nsga2_front_gen包含了哪些信息，给我解读一下
-    # todo: def plot_front_and_parents
-    # ———— hyperparam_v2_1_22:
-    # NSGA-II 的本意不是给出一个“综合分数最高”的解，而是给出一整条 Pareto 前沿上的权衡解集合。
-    # 我们现在把代码改成：
-    # 最终返回 Front 0（Pareto frontier）上的一系列分子
-    # 保存 Pareto frontier 的 jsonl
-    # 生成一张显示 Pareto frontier 的图（而不是单个 des 最高分子结构图）
-    # （可选）仍保留 base 分子的结构图输出，但不再输出“best_polymer”单体图。
-    # https://www.youtube.com/watch?v=SL-u_7hIqjA
-    # ———— v4:
-    # v3只画了最终一代（final population）的 Front 0，没有把所有 generation 的所有种群/前沿演化都保存进去。
-    # 方案B：保存一张“所有代的所有点 + 每代前沿轨迹”总览图 def plot_pareto_evolution
-    # ———— v5:
-    # 进一步修改：def plot_pareto_evolution
-    # 使用 colormap（viridis） 随着 generation 改变颜色
-    # 每一代的 Front 0 曲线颜色渐变
-    # 在图右侧显示 colorbar（表示代数）
-    # 删除：—— def plot_pareto_frontier
-    # ———— v6:
-    # 可视化所有pareto_solutions & 评估pareto_solutions每个mol的SA score (在 visualize_pareto_frontier 中计算，并按照升序排列)
-
-    # Base polymer Tg: 559.6 K, k: 3.159, SAScore: 3.29
-    # ———— 50 GEN 40 POP
-    # Frontier size = 33
-    # Avg Tg improvement: 7.19%
-    # Avg k decrease: -19.31%
-    # Avg SAScore: 4.68
-    # ———— 50 GEN 50 POP 和 40 POP没区别
+# if __name__ == "__main__":
+#
+#     from designPoly_main import frag_smiles
+#     RUN_FROM_SCRATCH = True
+#
+#     N_GEN = 50
+#     POP_SIZE = 50
+#     # target = 'multi'
+#     dir_folder = f'NSGA2_{N_GEN}GEN_{POP_SIZE}POP'
+#
+#     # ========= 1. 核心骨架 & 替换位点 =========
+#     base_smi = "*c1ccc(Oc2ccc(-n3c(=O)c4cc5c(=O)n(*)c(=O)c5cc4c3=O)cc2)cc1"
+#     # base_mol = Chem.MolFromSmiles(base_smi)
+#     random.seed(2025)
+#     base_tg = predict_property(base_smi, 'Tg')
+#     base_eps = predict_property(base_smi, 'EPS')
+#     base_sa = calSAScore(base_smi)
+#     print(f"Base polymer Tg: {base_tg:.1f} K, k: {base_eps:.3f}, SAScore: {base_sa:.2f}")
+#     GA = NSGA2(base_smi, base_tg, base_eps,
+#                frag_smiles, # target,
+#                dir_folder, N_GEN, POP_SIZE)
+#     # best_smi, best_prop = GA.run_ga()
+#
+#     if RUN_FROM_SCRATCH:
+#         print('Running NSGA-II ...')
+#         # 如果你想看“rank+crowding 如何选父母”的全过程，可开启下面两个开关
+#         # ———— hyperparam_v2_1_22 修改
+#         pareto_solutions = GA.run_ga(
+#             plot=True,
+#             # debug_select=True,      # True 会逐次打印 tournament 选择细节（输出很多）
+#             # save_parent_viz=True     # True 会每代输出 Pareto前沿+父母选择图
+#         )
+#         print("=== NSGA-II Pareto Frontier ===")
+#         print(f"Frontier size = {len(pareto_solutions)}")
+#         # pareto_solutions
+#         # "smiles": aux["smiles"],
+#         # "tg": aux["tg"],
+#         # "eps": aux["eps"],
+#         # "obj": final_objs[idx],  # (eps, -tg)
+#         # "rank": 0
+#
+#         delta_tg_list = []
+#         delta_eps_list = []
+#         sa_list = []
+#         # print(f'Show top-5 mols:')
+#         # for i, sol in enumerate(pareto_solutions[:5]):  # 只打印前5个
+#         for i, sol in enumerate(pareto_solutions):  # 只打印前5个
+#             cur_tg = sol["tg"]
+#             cur_eps = sol["eps"]
+#             cur_smi = sol["smiles"]
+#             cur_sa = calSAScore(cur_smi)
+#             delta_tg = (cur_tg - base_tg) / base_tg * 100
+#             delta_eps = (cur_eps - base_eps) / base_eps * 100
+#             delta_tg_list.append(delta_tg)
+#             delta_eps_list.append(delta_eps)
+#             sa_list.append(cur_sa)
+#
+#             print(f"ID: {i} Tg: {cur_tg:.1f} K, k: {cur_eps:.2f}, SAScore: {cur_sa:.2f}")
+#             print(f"SMILES: {sol['smiles']}")
+#             print(f'Improvement ratio: Tg: {delta_tg:.2f}%, k: {delta_eps:.2f}%')
+#
+#         avg_tg = sum(delta_tg_list) / len(delta_tg_list)
+#         avg_eps = sum(delta_eps_list) / len(delta_eps_list)
+#         avg_sa = sum(sa_list) / len(sa_list)
+#
+#         # print("=== Average Improvement ===")
+#         print(f"Avg Tg improvement: {avg_tg:.2f}%")
+#         print(f"Avg k decrease: {avg_eps:.2f}%")
+#         print(f"Avg SAScore: {avg_sa:.2f}")
+#
+#         # ———— hyperparam_v2_1_22 修改
+#
+#     plotgm = PlotGenMols(base_eps, base_tg, dir_folder)
+#     plotgm.plotKDEbyGenerations('tg')
+#     plotgm.plotKDEbyGenerations('eps')
+#     plotgm.plotScatterbyGenerations()
+#     plotgm.visualize_gen_bests(mols_per_row=5)
+#     plotgm.visualize_pareto_frontier(mols_per_row=5)
+#
+#     # NSGA2v2
+#     # ———— v2:
+#     # 每一代输出 Pareto rank 和 crowding distance
+#     # 打印每次锦标赛（tournament）比较的两名选手 + 胜者
+#     # 把“父母选择过程”写成 jsonl 日志
+#     # 画图：在 (EPS, Tg) 空间里显示每代的前沿 + crowding，并用箭头标出被选作父代的点
+#     # todo: 图片nsga2_front_gen包含了哪些信息，给我解读一下
+#     # todo: def plot_front_and_parents
+#     # ———— hyperparam_v2_1_22:
+#     # NSGA-II 的本意不是给出一个“综合分数最高”的解，而是给出一整条 Pareto 前沿上的权衡解集合。
+#     # 我们现在把代码改成：
+#     # 最终返回 Front 0（Pareto frontier）上的一系列分子
+#     # 保存 Pareto frontier 的 jsonl
+#     # 生成一张显示 Pareto frontier 的图（而不是单个 des 最高分子结构图）
+#     # （可选）仍保留 base 分子的结构图输出，但不再输出“best_polymer”单体图。
+#     # https://www.youtube.com/watch?v=SL-u_7hIqjA
+#     # ———— v4:
+#     # v3只画了最终一代（final population）的 Front 0，没有把所有 generation 的所有种群/前沿演化都保存进去。
+#     # 方案B：保存一张“所有代的所有点 + 每代前沿轨迹”总览图 def plot_pareto_evolution
+#     # ———— v5:
+#     # 进一步修改：def plot_pareto_evolution
+#     # 使用 colormap（viridis） 随着 generation 改变颜色
+#     # 每一代的 Front 0 曲线颜色渐变
+#     # 在图右侧显示 colorbar（表示代数）
+#     # 删除：—— def plot_pareto_frontier
+#     # ———— v6:
+#     # 可视化所有pareto_solutions & 评估pareto_solutions每个mol的SA score (在 visualize_pareto_frontier 中计算，并按照升序排列)
+#
+#     # Base polymer Tg: 559.6 K, k: 3.159, SAScore: 3.29
+#     # ———— 50 GEN 40 POP
+#     # Frontier size = 33
+#     # Avg Tg improvement: 7.19%
+#     # Avg k decrease: -19.31%
+#     # Avg SAScore: 4.68
+#     # ———— 50 GEN 50 POP 和 40 POP没区别
 

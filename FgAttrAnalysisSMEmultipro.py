@@ -63,7 +63,7 @@ fg_sidechain_smarts_add = {
     # 含氟侧基
     "-CF3":       "[*:1]-C(F)(F)F",
     "-OCF3":      "[*:1]-O-C(F)(F)F",
-    "-C2F5":      "[*:1]-[C](F)(F)-[C](F)(F)F",
+    "-CF2CF3":     "[*:1]-[C](F)(F)-[C](F)(F)F",
     "-OCF2CF3":   "[*:1]-O-[C](F)(F)-[C](F)(F)F",
     "-CF2CF2F3":  "[*:1]-[C](F)(F)-[C](F)(F)-[C](F)(F)F",
     "-OCF2CF2F3": "[*:1]-O-[C](F)(F)-[C](F)(F)-[C](F)(F)F",
@@ -165,30 +165,61 @@ def get_sidechain_matches(mol, smarts):
     return patt, filtered, anchor_qidx
 
 
-def delete_one_fg_instance(mol, match, anchor_qidx):
-    """删除匹配中的“非锚点原子”，保留锚点，实现剪掉侧基。"""
-    if mol is None:
-        return None
+
+# def delete_one_fg_instance(mol, match, anchor_qidx):
+#     """删除匹配中的“非锚点原子”，保留锚点，实现剪掉侧基。"""
+#     if mol is None:
+#         return None
+#     match = list(match)
+#     anchor_atom_idx = match[anchor_qidx]
+#     _ = anchor_atom_idx  # 仅表明我们保留它
+#     to_delete = [idx for i, idx in enumerate(match) if i != anchor_qidx]
+#
+#     em = Chem.EditableMol(Chem.Mol(mol))
+#     for aid in sorted(to_delete, reverse=True):
+#         try:
+#             em.RemoveAtom(aid)
+#         except Exception:
+#             return None
+#     newmol = em.GetMol()
+#     newmol = _safe_sanitize(newmol)
+#     return newmol
+
+#【SDE->SME】原 delete_one_fg_instance 改为仅返回待遮蔽的原子索引；不再删除原子或改变分子拓扑。
+def get_one_fg_mask_indices(match, anchor_qidx):
+    """返回匹配中的“非锚点原子”索引，用于遮蔽单个侧基实例。"""
+    if match is None or anchor_qidx is None:
+        return []
     match = list(match)
-    anchor_atom_idx = match[anchor_qidx]
-    _ = anchor_atom_idx  # 仅表明我们保留它
-    to_delete = [idx for i, idx in enumerate(match) if i != anchor_qidx]
+    if anchor_qidx < 0 or anchor_qidx >= len(match):
+        return []
 
-    em = Chem.EditableMol(Chem.Mol(mol))
-    for aid in sorted(to_delete, reverse=True):
-        try:
-            em.RemoveAtom(aid)
-        except Exception:
-            return None
-    newmol = em.GetMol()
-    newmol = _safe_sanitize(newmol)
-    return newmol
-
+    #【SDE->SME】锚点属于主链/骨架，因此只遮蔽匹配中的非锚点原子。
+    mask_indices = [idx for i, idx in enumerate(match) if i != anchor_qidx]
+    return mask_indices
 
 # ===== 预测函数 =====
+# def predict_property(model, smiles, device, mask_indices=None):
+#     """
+#     ✨说明：此版本不使用 mask；为兼容原框架，保留该签名但忽略 mask_indices。
+#     """
+#     try:
+#         dataset = MolDataset([smiles], [0])
+#         loader = DataLoader(dataset, batch_size=1, shuffle=False)
+#         with torch.no_grad():
+#             for batch in loader:
+#                 batch = batch.to(device)
+#                 if not hasattr(batch, 'edge_index') or batch.edge_index.size(1) == 0:
+#                     return None
+#                 out, _ = model(batch)
+#                 return out.cpu().numpy()[0]
+#     except:
+#         return None
+
 def predict_property(model, smiles, device, mask_indices=None):
     """
-    ✨说明：此版本不使用 mask；为兼容原框架，保留该签名但忽略 mask_indices。
+    #【SDE->SME】当 mask_indices 非空时，将对应原子的节点特征置零；
+    #【SDE->SME】保留节点、化学键和 edge_index，因此属于 feature masking，而不是结构删除。
     """
     try:
         dataset = MolDataset([smiles], [0])
@@ -198,11 +229,21 @@ def predict_property(model, smiles, device, mask_indices=None):
                 batch = batch.to(device)
                 if not hasattr(batch, 'edge_index') or batch.edge_index.size(1) == 0:
                     return None
+
+                #【SDE->SME】对单分子图中指定原子的节点特征进行零遮蔽。
+                if mask_indices:
+                    if not hasattr(batch, 'x') or batch.x is None:
+                        return None
+                    valid_mask_indices = sorted(set(int(idx) for idx in mask_indices))
+                    if any(idx < 0 or idx >= batch.x.size(0) for idx in valid_mask_indices):
+                        return None
+                    batch.x = batch.x.clone()
+                    batch.x[valid_mask_indices] = 0
+
                 out, _ = model(batch)
                 return out.cpu().numpy()[0]
     except:
         return None
-
 
 # ================ 多进程并行：按“分子”并行 ================
 from multiprocessing import Pool
@@ -227,10 +268,71 @@ def _init_worker(model_state_dict, device_str, num_layers=3, hidden_dim=128):
     _model_global = model
 
 
+# def _process_one_smiles(smiles: str):
+#     # _process_one_smiles(smiles: str, target=target):
+#     """
+#     单分子处理：基线预测 → 找 FG 吊坠匹配 → 逐实例删除并预测 → per-FG 均值。
+#     返回该 SMILES 的若干记录(list of dict)。
+#     """
+#     global _model_global, _device_global
+#     try:
+#         mol = Chem.MolFromSmiles(smiles, sanitize=False)
+#         mol = _safe_sanitize(mol)
+#         if mol is None or mol.GetNumAtoms() < 2:
+#             return []
+#
+#         # 基线预测
+#         base_pred = predict_property(_model_global, smiles, _device_global)
+#         if base_pred is None:
+#             return []
+#
+#         out_records = []
+#         # 针对每一个功能基团（仅限“侧基锚定”词典）
+#         for fg_name, smarts in functional_groups.items():
+#             patt, matches, anchor_qidx = get_sidechain_matches(mol, smarts)
+#             if not matches:
+#                 continue
+#             n_matches_total = len(matches)
+#             # per_instance_contrib = []
+#             for inst_id, m in enumerate(matches):
+#                 pruned = delete_one_fg_instance(mol, m, anchor_qidx)
+#                 if pruned is None:
+#                     continue
+#                 smi_pruned = Chem.MolToSmiles(pruned, canonical=True)
+#                 pred_after = predict_property(_model_global, smi_pruned, _device_global)
+#                 if pred_after is None:
+#                     continue
+#                 contrib_i = float(base_pred - pred_after)
+#                 # 每个实例单独一条记录
+#                 out_records.append({
+#                     'fg': fg_name,
+#                     'attribution': contrib_i,         # ← 单实例贡献
+#                     'n_instances': n_matches_total,   # 该分子该FG的总匹配数（便于统计）
+#                     'instance_id': int(inst_id),      # 实例序号（0..n-1）
+#                     'smiles': smiles,
+#                     # 可选：如需调试可加入 'pruned_smiles': smi_pruned,
+#                 })
+#
+#             #     per_instance_contrib.append(contrib_i)
+#             #
+#             # if per_instance_contrib:
+#             #     avg_contrib = float(np.mean(per_instance_contrib))
+#             #     out_records.append({
+#             #         'fg': fg_name,
+#             #         'attribution': avg_contrib,        # per-instance 平均贡献（分子级）
+#             #         'n_instances': len(per_instance_contrib),
+#             #         'smiles': smiles,
+#             #     })
+#         return out_records
+#
+#     except Exception as e:
+#         # 子进程里尽量不打印长错误，返回空让主进程汇总
+#         return []
+
 def _process_one_smiles(smiles: str):
     # _process_one_smiles(smiles: str, target=target):
     """
-    单分子处理：基线预测 → 找 FG 吊坠匹配 → 逐实例删除并预测 → per-FG 均值。
+    #【SDE->SME】单分子处理：基线预测 → 找 FG 吊坠匹配 → 逐实例遮蔽并预测 → per-FG 均值。
     返回该 SMILES 的若干记录(list of dict)。
     """
     global _model_global, _device_global
@@ -254,11 +356,15 @@ def _process_one_smiles(smiles: str):
             n_matches_total = len(matches)
             # per_instance_contrib = []
             for inst_id, m in enumerate(matches):
-                pruned = delete_one_fg_instance(mol, m, anchor_qidx)
-                if pruned is None:
+                #【SDE->SME】不再生成删除侧基后的新分子；改为获取该侧基实例的非锚点原子索引。
+                mask_indices = get_one_fg_mask_indices(m, anchor_qidx)
+                if not mask_indices:
                     continue
-                smi_pruned = Chem.MolToSmiles(pruned, canonical=True)
-                pred_after = predict_property(_model_global, smi_pruned, _device_global)
+
+                #【SDE->SME】使用原始 SMILES 构图，只将当前侧基实例对应的节点特征置零。
+                pred_after = predict_property(
+                    _model_global, smiles, _device_global, mask_indices=mask_indices
+                )
                 if pred_after is None:
                     continue
                 contrib_i = float(base_pred - pred_after)
@@ -269,7 +375,7 @@ def _process_one_smiles(smiles: str):
                     'n_instances': n_matches_total,   # 该分子该FG的总匹配数（便于统计）
                     'instance_id': int(inst_id),      # 实例序号（0..n-1）
                     'smiles': smiles,
-                    # 可选：如需调试可加入 'pruned_smiles': smi_pruned,
+                    #【SDE->SME】可选调试字段：'mask_indices': mask_indices,
                 })
 
             #     per_instance_contrib.append(contrib_i)
@@ -289,7 +395,34 @@ def _process_one_smiles(smiles: str):
         return []
 
 
-def collect_fg_attributions_avg_delete_mp(df, model, device, target, num_workers=4):
+# def collect_fg_attributions_avg_delete_mp(df, model, device, target, num_workers=4):
+#     """
+#     多进程版本：将“逐分子归因”并行化。
+#     """
+#     device_str = str(device)
+#     model_state = model.state_dict()
+#
+#     smiles_list = df['SMILES'].tolist()
+#
+#     attribution_records = []
+#     with Pool(processes=num_workers,
+#               initializer=_init_worker,
+#               initargs=(model_state, device_str)) as pool:
+#         # 并行按分子处理
+#         # func = partial(_process_one_smiles, target=target)
+#         func = _process_one_smiles
+#         for rec_list in tqdm(pool.imap(func, smiles_list), total=len(smiles_list)):
+#             if rec_list:
+#                 attribution_records.extend(rec_list)
+#
+#     if attribution_records:
+#         return pd.DataFrame(attribution_records)
+#     else:
+#         print("Warning: No attribution data collected (avg-delete, mp)!")
+#         return pd.DataFrame(columns=['fg', 'attribution', 'n_instances', 'smiles'])
+
+#【SDE->SME】函数名由 avg_delete 改为 avg_mask，以反映遮蔽归因。
+def collect_fg_attributions_avg_mask_mp(df, model, device, target, num_workers=4):
     """
     多进程版本：将“逐分子归因”并行化。
     """
@@ -312,7 +445,7 @@ def collect_fg_attributions_avg_delete_mp(df, model, device, target, num_workers
     if attribution_records:
         return pd.DataFrame(attribution_records)
     else:
-        print("Warning: No attribution data collected (avg-delete, mp)!")
+        print("Warning: No attribution data collected (avg-mask, mp)!")
         return pd.DataFrame(columns=['fg', 'attribution', 'n_instances', 'smiles'])
 
 
@@ -400,11 +533,21 @@ def plot_violin_filter(df_attr, property_name, out_dir,
                    palette='coolwarm', inner='box', order=order)
     # todo: 换色 palette=
     plt.axvline(0, color='k', linestyle='--')
+    # if property_name == 'EPS':
+    #     property_name = 'k'
+    # plt.title(f'Functional Group Attribution Distribution for {property_name}')
+    # plt.xlabel('Attribution')
+    # plt.ylabel('Functional Groups')
+
     if property_name == 'EPS':
-        property_name = 'k'
-    plt.title(f'Functional Group Attribution Distribution for {property_name}')
-    plt.xlabel('Attribution')
-    plt.ylabel('Functional Groups')
+        plt.title(f'Substituent Attribution Distribution for k')
+        plt.xlabel('Attribution')
+        plt.ylabel('Substituents')
+    elif property_name == 'Tg':
+        plt.title(r'Substituent Attribution Distribution for $T_g$')
+        plt.xlabel('Attribution')
+        plt.ylabel('Substituents')
+
     plt.tick_params(axis='both', labelsize=11)
     plt.tight_layout()
     plt.savefig(f'{out_dir}/attribution_violin_{property_name}_{png_suffix}.png', dpi=600)
@@ -476,9 +619,11 @@ if __name__ == '__main__':
     clean_outliers = True
 
     n_core = 4
-    # note: test version 1k data only
-    data_path = 'data/PI1M.csv'
-    attrfg_dir = 'attrfg1m'  # without NO2
+    data_path = 'polyDesign_data/data_train/PI1M.csv'
+    # attrfg_dir = 'attrfg1m'  # without NO2
+    #【SDE->SME】使用独立输出目录，避免误读或覆盖已有的 SDE 删除归因结果。
+    attrfg_dir = 'attr1m_sme'  # without NO2
+
     os.makedirs(attrfg_dir, exist_ok=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -513,7 +658,11 @@ if __name__ == '__main__':
             print(f"CPU cores: {core_count}, 使用 {n_core} 个进程并行")
 
             # ✨ 并行的“删除侧基 + 实例平均”收集函数
-            df_attr = collect_fg_attributions_avg_delete_mp(
+            # df_attr = collect_fg_attributions_avg_delete_mp(
+            #     df, model, device, target, num_workers=n_core
+            # )
+            #【SDE->SME】并行的“遮蔽侧基 + 实例平均”收集函数
+            df_attr = collect_fg_attributions_avg_mask_mp(
                 df, model, device, target, num_workers=n_core
             )
 
@@ -611,27 +760,4 @@ if __name__ == '__main__':
     elif os.path.exists(fg_results_path):
         print("功能基团贡献表已存在。")
 
-    # v2 排序按照 functional_groups 进行排序
-    #  plot_scatter_filter：同样按 functional_groups 顺序
-    #  groups_attr.csv 汇总表：按 functional_groups 顺序重排行
-    # hyperparam_v2_1_22 设定一个参数（string类型），对于plot_violin_filter和groups_attr.csv，可以选择是要均值还是中位数
-    # v4 groups_attr.csv升级同时保存：mean + median + IQR
-    """
-    # note:
-    #  在 violin plot（小提琴图） 中，标注的中位线表示的是“中位数（median）”，不是均值（mean）。
-    IQR 是 Interquartile Range，中文叫四分位距。它不是一个“中心值”，而是一个衡量数据分布离散程度、稳定性和不确定性的统计量
-    对一组数值按从小到大排序后：Q1（第一四分位数）：25% 分位点；Q3（第三四分位数）：75% 分位点
-    IQR = Q3 − Q1，也就是说，IQR 描述的是：中间 50% 数据所覆盖的区间宽度。
-    你现在的 attribution 数据有三个显著特点：
-    一是样本来自不同骨架、不同取代环境；
-    二是存在长尾（极端正贡献或极端负贡献）；
-    三是你已经意识到均值会被“少数极端体系”拖偏。
-    在这种情况下：中位数告诉你“典型情况下这个基团是升还是降”，IQR告诉你“这个判断有多稳”
-    另外，IQR 不会被极端值支配，这一点和中位数一样。
-    所以它比标准差更适合你这种“非高斯、长尾、混合分布”的归因结果。
-    """
-    # v5 删除异常值再进行统计 // scatter 上保留异常值，violin删除异常值，groups_attr.csv删除异常值
-    # v6 对functional group修改一些名称&顺序
-    # v7
-    # todo: 换色 palette=
 

@@ -3,7 +3,6 @@
 先计算基础骨架的 ASA，然后允许一定的放大倍数（默认 1.5 倍，可自行调整）。
 只要生成分子的 ASA > 阈值，就视为“位阻过大”→ 返回 None，在 GA 中等同于非法个体被淘汰。
 """
-from rdkit.Chem import rdMolDescriptors
 # 用于计算 Labute ASA
 
 import os
@@ -12,7 +11,6 @@ import random
 from typing import Tuple
 import matplotlib.pyplot as plt
 import json
-import pandas as pd
 from rdkit import Chem
 from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit.Chem.rdchem import KekulizeException
@@ -30,7 +28,7 @@ model = GATModel(num_node_features=7, num_edge_features=6,
 
 def predict_property(smiles: str, target="Tg") -> float:
     suffix = "_cl_50epo_aug12"
-    mdl_path = f"../models_polymer/best_model_{target}{suffix}.pth"
+    mdl_path = f"models_polymer/best_model_{target}{suffix}.pth"
     chkpt = torch.load(mdl_path, map_location=device)
     model.load_state_dict(chkpt["model_state_dict"])
     model.to(device).eval()
@@ -461,53 +459,49 @@ class GeneticAlgorithm():
         return best_smi, best_prop
 
 
-if __name__ == "__main__":
-    from designPolyGA_main import frag_smiles
-
-    N_GEN = 50
-    POP_SIZE = 40
-    target = 'multi'
-    dir_folder = f'resultGA'
-    # ========= 1. 核心骨架 & 替换位点 =========
-    base_smi = "*c1ccc(Oc2ccc(-n3c(=O)c4cc5c(=O)n(*)c(=O)c5cc4c3=O)cc2)cc1"
-    # base_mol = Chem.MolFromSmiles(base_smi)
-    random.seed(2025)
-    base_tg = predict_property(base_smi, 'Tg')
-    base_eps = predict_property(base_smi, 'EPS')
-    print(f"Base polymer Tg: {base_tg:.1f} K, k: {base_eps:.3f}")
-    print('Running GA ...')
-    GA = GeneticAlgorithm(base_smi, base_tg, base_eps,
-                          frag_smiles, dir_folder, # target='multi',
-                          # w_tg=1.0, w_eps=1.0,
-                          N_GEN=N_GEN, POP_SIZE=POP_SIZE)
-    best_smi, best_prop = GA.run_ga()
-
-    print("=== GA 结果 ===")
-    print("Best SMILES :", best_smi)
-    # if target == 'multi':
-    best_eps, best_tg = best_prop
-    print(f'Best Tg: {best_tg:.1f} K, k: {best_eps:.3f}')
-    delta_tg = (best_tg - base_tg) / base_tg * 100
-    delta_eps = (best_eps - base_eps) / base_eps * 100
-    print(f'Improvement ratio: Tg: {delta_tg:.2f}%, k: {delta_eps:.2f}%')
-
-#     elif target == 'Tg':
-#         print(f'Best {target}: {best_prop:.1f} K')
-#         delta_tg = (best_prop - base_tg) / base_tg * 100
-#         print(f'Improvement ratio: Tg: {delta_tg:.2f}%')
-#     else:
-#         print(f'Best {target}: {best_prop:.3f}')
-#         delta_eps = (best_prop - base_eps) / base_eps * 100
-#         print(f'Improvement ratio: EPS: {-delta_eps:.2f}%')
+# if __name__ == "__main__":
+#     from designPoly_main import frag_smiles
 #
-    plotgm = PlotGenMols(base_eps, base_tg, dir_folder)
-    plotgm.plotKDEbyGenerations('tg')
-    plotgm.plotKDEbyGenerations('eps')
-    plotgm.plotScatterbyGenerations()
-    plotgm.visualize_gen_bests(mols_per_row=5)
+#     N_GEN = 50
+#     POP_SIZE = 40
+#     target = 'multi'
+#     dir_folder = f'resultGA'
+#     # ========= 1. 核心骨架 & 替换位点 =========
+#     base_smi = "*c1ccc(Oc2ccc(-n3c(=O)c4cc5c(=O)n(*)c(=O)c5cc4c3=O)cc2)cc1"
+#     # base_mol = Chem.MolFromSmiles(base_smi)
+#     random.seed(2025)
+#     base_tg = predict_property(base_smi, 'Tg')
+#     base_eps = predict_property(base_smi, 'EPS')
+#     print(f"Base polymer Tg: {base_tg:.1f} K, k: {base_eps:.3f}")
+#     print('Running GA ...')
+#     GA = GeneticAlgorithm(base_smi, base_tg, base_eps,
+#                           frag_smiles, dir_folder, # target='multi',
+#                           # w_tg=1.0, w_eps=1.0,
+#                           N_GEN=N_GEN, POP_SIZE=POP_SIZE)
+#     best_smi, best_prop = GA.run_ga()
+#
+#     print("=== GA 结果 ===")
+#     print("Best SMILES :", best_smi)
+#     # if target == 'multi':
+#     best_eps, best_tg = best_prop
+#     print(f'Best Tg: {best_tg:.1f} K, k: {best_eps:.3f}')
+#     delta_tg = (best_tg - base_tg) / base_tg * 100
+#     delta_eps = (best_eps - base_eps) / base_eps * 100
+#     print(f'Improvement ratio: Tg: {delta_tg:.2f}%, k: {delta_eps:.2f}%')
+#
+# #     elif target == 'Tg':
+# #         print(f'Best {target}: {best_prop:.1f} K')
+# #         delta_tg = (best_prop - base_tg) / base_tg * 100
+# #         print(f'Improvement ratio: Tg: {delta_tg:.2f}%')
+# #     else:
+# #         print(f'Best {target}: {best_prop:.3f}')
+# #         delta_eps = (best_prop - base_eps) / base_eps * 100
+# #         print(f'Improvement ratio: EPS: {-delta_eps:.2f}%')
+# #
+#     plotgm = PlotGenMols(base_eps, base_tg, dir_folder)
+#     plotgm.plotKDEbyGenerations('tg')
+#     plotgm.plotKDEbyGenerations('eps')
+#     plotgm.plotScatterbyGenerations()
+#     plotgm.visualize_gen_bests(mols_per_row=5)
 
-    # Base polymer Tg: 559.6 K, k: 3.159
-    # Best SMILES : *c1c(N)cc(Oc2c(C#C)cc(-n3c(=O)c4c(C#C)c5c(=O)n(*)c(=O)c5c(C#N)c4c3=O)c(C#C)c2C#C)c(C#C)c1C#C
-    # Best Tg: 636.1 K, k: 2.532
-    # Improvement ratio: Tg: 13.67%, k: -19.83%
 

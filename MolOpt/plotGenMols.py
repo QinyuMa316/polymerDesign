@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import os
@@ -12,6 +13,8 @@ from io import BytesIO
 from PIL import Image
 # from MolOpt import sascorer
 from MolOpt.calSAScore import calSAScore
+import seaborn as sns
+
 
 class PlotGenMols:
     def __init__(self, base_eps, base_tg, dir_folder):
@@ -36,14 +39,16 @@ class PlotGenMols:
         """
         out_png = f'{self.dir_folder}/kde_by_gen_{target}.png'
         plt.rcParams.update({
-            'font.size': 12,  # 设置默认字体大小
-            'axes.titlesize': 12,  # 设置子图标题（ax.set_title）的字体大小
-            'figure.titlesize': 12  # 设置整张图的标题（plt.suptitle）的字体大小
+            'font.family': 'Arial',
+            'axes.titlesize': 15,  # 主标题
+            'axes.labelsize': 15,  # 横纵轴标题
+            'xtick.labelsize': 13,  # x刻度
+            'ytick.labelsize': 13  # y刻度
         })
         gens = sorted(self.df_all['generation'].unique())
         norm = mpl.colors.Normalize(vmin=min(gens), vmax=max(gens))
         cmap = mpl.colormaps['viridis']  # ← 避免 get_cmap 的弃用警告
-        line_kw = dict(linewidth=1.2, alpha=0.8)
+        line_kw = dict(linewidth=1.2, alpha=0.7)
         sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         sm.set_array([])  # 供 colorbar 使用
 
@@ -79,9 +84,11 @@ class PlotGenMols:
 
         out_png = f'{self.dir_folder}/scatter_by_gen.png'
         plt.rcParams.update({
-            'font.size': 12,  # 设置默认字体大小
-            'axes.titlesize': 12,  # 设置子图标题（ax.set_title）的字体大小
-            'figure.titlesize': 12  # 设置整张图的标题（plt.suptitle）的字体大小
+            'font.family': 'Arial',
+            'axes.titlesize': 15,  # 主标题
+            'axes.labelsize': 15,  # 横纵轴标题
+            'xtick.labelsize': 13,  # x刻度
+            'ytick.labelsize': 13  # y刻度
         })
 
         plt.figure(figsize=(7, 5))
@@ -90,7 +97,7 @@ class PlotGenMols:
                               c=self.df_all['generation'],
                               cmap='viridis',  # 深浅渐变
                               # s = 36, default
-                              alpha=0.8)
+                              alpha=0.7)
         # start point (base_esp, base_tg) 用红色五角星标注
 
         plt.scatter(self.base_eps, self.base_tg,
@@ -175,6 +182,10 @@ class PlotGenMols:
         uniq_list = sorted(uniq.items(), key=lambda x: x[1][1])
         # rec["tg"]（0）, rec["eps"]（1）, sa_score（2）
 
+        # print("=== sorted uniq_list by eps ===")
+        # for i, (smi, (tg, eps, sa_score)) in enumerate(uniq_list[:10]):
+        #     print(i, f"tg={tg:.1f}, k={eps:.3f}, sa={sa_score:.2f}")
+
         # uniq: dict {
         #       "smiles":[tg, eps, sascore],
         #       }
@@ -211,6 +222,162 @@ class PlotGenMols:
             img.save(out_png)
         else:
             print("[WARN] 未找到可用分子，未生成图像")
+
+    def plotScatterWithKDEbyGenerations(self, id, version):
+        """
+        一张图同时显示：
+        - 中间：eps vs tg 散点图（按 generation 着色）
+        - 上方：eps 的 KDE 分布（按 generation 着色）
+        - 右侧：tg 的 KDE 分布（按 generation 着色）
+        """
+
+        out_png = f'{self.dir_folder}/scatter_kde_by_gen.png'
+
+        plt.rcParams.update({
+            'font.family': 'Arial',
+            'axes.titlesize': 15,
+            'axes.labelsize': 15,
+            'xtick.labelsize': 13,
+            'ytick.labelsize': 13
+        })
+
+        df = self.df_all[['eps', 'tg', 'generation']].dropna().copy()
+        df = df.sort_values('generation')
+
+        gens = sorted(df['generation'].unique())
+        norm = mpl.colors.Normalize(vmin=min(gens), vmax=max(gens))
+        cmap = mpl.colormaps['viridis']
+        palette = {g: cmap(norm(g)) for g in gens}
+
+        # ===== 手动控制主图范围 =====
+        x = df['eps'].to_numpy()
+        y = df['tg'].to_numpy()
+
+        x_min, x_max = np.min(x), np.max(x)
+        y_min, y_max = np.min(y), np.max(y)
+
+        x_pad = 0.3 * (x_max - x_min)
+        y_pad = 0.3 * (y_max - y_min)
+
+        xlim = (x_min - x_pad, x_max + x_pad)
+        ylim = (y_min - y_pad, y_max + y_pad)
+
+        # ===== 建图 =====
+        g = sns.JointGrid(
+            data=df,
+            x='eps',
+            y='tg',
+            height=8,
+            ratio=4,
+            space=0.08
+        )
+        g.figure.set_size_inches(8, 6)
+
+        # ===== 主散点图 =====
+        sns.scatterplot(
+            data=df,
+            x='eps',
+            y='tg',
+            hue='generation',
+            palette=palette,
+            s=50,
+            alpha=0.7,
+            edgecolor=None,
+            legend=False,
+            ax=g.ax_joint
+        )
+
+        # ===== 上方边际 KDE =====
+        sns.kdeplot(
+            data=df,
+            x='eps',
+            hue='generation',
+            hue_order=gens,
+            palette=palette,
+            common_norm=False,
+            fill=False,
+            linewidth=1.1,
+            alpha=0.7,
+            legend=False,
+            ax=g.ax_marg_x
+        )
+
+        # ===== 右侧边际 KDE =====
+        sns.kdeplot(
+            data=df,
+            y='tg',
+            hue='generation',
+            hue_order=gens,
+            palette=palette,
+            common_norm=False,
+            fill=False,
+            linewidth=1.1,
+            alpha=0.7,
+            legend=False,
+            ax=g.ax_marg_y
+        )
+
+        # ===== Base molecule =====
+        g.ax_joint.scatter(
+            self.base_eps, self.base_tg,
+            color='red', marker='*', s=180,
+            label='Base Molecule', zorder=10
+        )
+
+        # ===== 坐标范围：主图和边际图同步 =====
+        g.ax_joint.set_xlim(xlim)
+        g.ax_joint.set_ylim(ylim)
+        g.ax_marg_x.set_xlim(xlim)  # 上方边际图的 x 范围与主图一致
+        g.ax_marg_y.set_ylim(ylim)  # 右侧边际图的 y 范围与主图一致
+
+        # ===== 标签 =====
+        g.ax_joint.set_xlabel(r'$k$')
+        g.ax_joint.set_ylabel(r'$T_g$ (K)')
+        g.ax_marg_x.set_ylabel('Density')
+        g.ax_marg_y.set_xlabel('Density')
+
+        # ===== 图例 =====
+        g.ax_joint.legend(loc='lower left'
+                          # , fontsize=11, frameon=True
+                          )
+
+        # ===== 标题 =====
+        g.figure.suptitle(
+            f'{version}'+r' Population: $k$ vs $T_g$ by Generation' + f' (id: {id})',
+            y=0.98,
+            # fontsize=20
+        )
+
+        # ===== 调整布局，为 colorbar 留出空间 =====
+        g.figure.subplots_adjust(top=0.92, right=0.86)  # 右侧预留 0.14 宽度
+
+        # ===== 【修改】动态计算 colorbar 位置，使其与右侧边际图对齐 =====
+        # 获取右侧边际图的位置 [left, bottom, width, height]
+        pos_marg_y = g.ax_marg_y.get_position()
+        # 在边际图右侧创建 colorbar 轴：x0 = 边际图右边界 + 小间距，宽度固定，y0 和 height 与边际图相同
+        cax_width = 0.03
+        cax_gap = 0.01
+        cax = g.figure.add_axes([
+            pos_marg_y.x1 + cax_gap,  # left
+            pos_marg_y.y0,  # bottom
+            cax_width,  # width
+            pos_marg_y.height  # height 与边际图一致
+        ])
+
+        sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+        sm.set_array([])
+        cbar = g.figure.colorbar(sm, cax=cax)
+        cbar.set_label('Generation',
+                       # fontsize=12
+                       )
+        # 可选：调整 colorbar 刻度朝向，减少占用空间
+        cbar.ax.tick_params(direction='in', length=4)
+
+        # ===== 美化 =====
+        sns.despine(fig=g.figure)
+        g.figure.savefig(out_png, dpi=600, bbox_inches='tight')
+        plt.close(g.figure)
+
 
 
 
