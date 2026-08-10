@@ -794,14 +794,22 @@ class NSGA2():
 
         # ========= 收集 Pareto frontier 结果 =========
         pareto_solutions = []
+        seen_smiles = set()
         for idx in front0_idx:
             aux = final_aux[idx]
             if aux["smiles"] is None:
                 continue
-            pareto_solutions.append({
-                "smiles": aux["smiles"],
-                "tg": aux["tg"],
-                "eps": aux["eps"],
+            # ===== 按照smiles去重 =====
+            smiles = aux["smiles"]
+            if smiles in seen_smiles:
+                continue
+            if smiles in seen_smiles:
+                continue
+            seen_smiles.add(smiles)
+            # ==== 按照smiles去重 ====
+            pareto_solutions.append(
+                {"smiles": aux["smiles"],
+                "tg": aux["tg"], "eps": aux["eps"],
                 "obj": final_objs[idx],  # (eps, -tg)
                 "rank": 0
             })
@@ -918,8 +926,8 @@ class NSGA2():
 #     # 打印每次锦标赛（tournament）比较的两名选手 + 胜者
 #     # 把“父母选择过程”写成 jsonl 日志
 #     # 画图：在 (EPS, Tg) 空间里显示每代的前沿 + crowding，并用箭头标出被选作父代的点
-#     # todo: 图片nsga2_front_gen包含了哪些信息，给我解读一下
-#     # todo: def plot_front_and_parents
+#     # 图片nsga2_front_gen包含了哪些信息，给我解读一下
+#     # def plot_front_and_parents
 #     # ———— hyperparam_v2_1_22:
 #     # NSGA-II 的本意不是给出一个“综合分数最高”的解，而是给出一整条 Pareto 前沿上的权衡解集合。
 #     # 我们现在把代码改成：
@@ -939,12 +947,3 @@ class NSGA2():
 #     # 删除：—— def plot_pareto_frontier
 #     # ———— v6:
 #     # 可视化所有pareto_solutions & 评估pareto_solutions每个mol的SA score (在 visualize_pareto_frontier 中计算，并按照升序排列)
-#
-#     # Base polymer Tg: 559.6 K, k: 3.159, SAScore: 3.29
-#     # ———— 50 GEN 40 POP
-#     # Frontier size = 33
-#     # Avg Tg improvement: 7.19%
-#     # Avg k decrease: -19.31%
-#     # Avg SAScore: 4.68
-#     # ———— 50 GEN 50 POP 和 40 POP没区别
-

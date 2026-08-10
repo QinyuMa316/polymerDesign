@@ -97,7 +97,7 @@ python FgAttrAnalysisSDEmultipro.py
 ### Structure Optimization
 
 ```
-python polymerDesign_GAs.py
+python polymerDesignGAs.py
 ```
 
 ## Computational Resources
