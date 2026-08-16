@@ -29,8 +29,8 @@ polyDesign_data
 │   └── polyimides_pred_prop_base_str_std.csv
 └── data_train
     ├── PI1M.csv
-    ├── EPS_combined.csv
-    └── Tg_combined.csv
+    ├── EPS_combined_unique.csv
+    └── Tg_combined_unique.csv
 ```
 
 The files are used as follows:
