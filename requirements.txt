@@ -14,7 +14,6 @@ freetype-py==2.3.0
 frozenlist==1.7.0
 fsspec==2026.2.0
 gmpy2==2.2.1
-greenlet==3.3.2
 h2==4.3.0
 hpack==4.1.0
 hyperframe==6.1.0
@@ -25,7 +24,6 @@ kiwisolver==1.4.9
 llvmlite==0.46.0
 MarkupSafe==3.0.3
 matplotlib==3.10.8
-mpmath==1.4.0
 multidict==6.7.1
 munkres==1.1.4
 networkx==3.6.1
@@ -38,7 +36,6 @@ pillow==12.1.1
 pip==26.0.1
 propcache==0.3.1
 psutil==7.2.2
-pycairo==1.29.0
 pynndescent==0.5.13
 pyparsing==3.3.2
 PySocks==1.7.1
@@ -47,15 +44,12 @@ PyYAML==6.0.3
 rdkit==2025.9.6
 reportlab==4.4.10
 requests==2.32.5
-rlPyCairo==0.4.0
 scikit-learn==1.8.0
 scipy==1.17.1
 seaborn==0.13.2
 setuptools==82.0.0
 six==1.17.0
-SQLAlchemy==2.0.47
 statsmodels==0.14.6
-sympy==1.14.0
 threadpoolctl==3.6.0
 torch==2.2.2
 torch-geometric==2.6.1
