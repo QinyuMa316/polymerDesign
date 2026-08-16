@@ -3,9 +3,13 @@
 
 
 ## Requirements
+optional:
 ```
-conda create -n polydesign --file requirements.txt
+conda create -n polydesign python=3.11
 conda activate polydesign
+```
+```
+python -m pip install -r requirements.txt
 ```
 
 ## Notation
@@ -28,15 +32,15 @@ polyDesign_data
 ├── data_modification
 │   └── polyimides_pred_prop_base_str_std.csv
 └── data_train
-    ├── PI1M.csv
+    ├── PI1M_unique.csv
     ├── EPS_combined_unique.csv
     └── Tg_combined_unique.csv
 ```
 
 The files are used as follows:
 
-- `PI1M.csv` is used for model pretraining.
-- `EPS_combined.csv` and `Tg_combined.csv` are used for fine-tuning on the $k$ and $T_g$ prediction tasks, respectively.
+- `PI1M_unique.csv` is used for model pretraining.
+- `EPS_combined_unique.csv` and `Tg_combined_unique.csv` are used for fine-tuning on the $k$ and $T_g$ prediction tasks, respectively.
 - `polyimides_pred_prop_base_str_std.csv` is used for polymer structure optimization.
 
 ## Usage
