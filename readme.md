@@ -45,7 +45,7 @@ Run the pretraining script with the desired model configuration:
 
 ### Pretraining
 ```
-python3 polymerCL-GNN-Pretrain-mix.py \
+python3 polymerCL_Pretrain.py \
     --n_layers 3 \
     --hidden_dim 128 \
     --dropout 0.02 \
@@ -66,7 +66,7 @@ Main arguments:
 ### Fine-Tuning
 After pretraining, run the fine-tuning script for the target property:
 ```
-python3 polymerCL-GNN-FT.py \
+python3 polymerCL_FT_kfold.py \
     --pretrain_epoch 50 \
     --model_dir models_polymers \
     --target EPS \

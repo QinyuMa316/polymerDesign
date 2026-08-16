@@ -364,10 +364,6 @@ if __name__ == "__main__":
     else:
         version = 'NSGA-II'
         main_dir = f'result{version}'
-        if 'NS' not in version:
-            from designMol.designPolyGA import GeneticAlgorithm
-        elif 'NS' in version:
-            from designMol.designPolyNSGA2 import NSGA2
 
     for id, scaffold in tqdm(enumerate(scaffolds_unique)):
         print('\n'+'='*50)
@@ -581,15 +577,3 @@ if __name__ == "__main__":
     base_polymers_df = pd.DataFrame(base_polymers)
     base_polymers_df.to_csv(f'{main_dir}/base_polymers.csv', index=False)
     visualize_base_polymers(main_dir, base_polymers, mols_per_row=4)
-    """
-    v1:
-    添加对最终非支配解集计算 hypervolume、Pareto coverage、spacing（最终的）
-    v2: 
-    添加对最终非支配解集计算 hypervolume、Pareto coverage、spacing（最终的，以及每个generation的） 
-    对于每个generation的要画出 hypervolume、Pareto coverage、spacing这几个参数的变化趋势。 
-    在main代码，在某指定随机种子下，同时执行GA和NSGA2最后进行汇总hypervolume、Pareto coverage、spacing进行比较
-    v3: 
-    为什么最终的opt_results.csv没有包含原来的
-    Avg Tg change (%),Avg k change (%),Avg SAScore,Avg Delta SAScore这些信息，
-    请你添加进去（包括GA的和NSGA-II的）
-    """
