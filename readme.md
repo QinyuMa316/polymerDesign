@@ -4,11 +4,12 @@
 
 ## Requirements
 optional:
-```
+```bash
+git clone https://github.com/QinyuMa316/polymerDesign.git
 conda create -n polydesign python=3.11
 conda activate polydesign
 ```
-```
+```bash
 python -m pip install -r requirements.txt
 ```
 
@@ -48,7 +49,7 @@ The files are used as follows:
 Run the pretraining script with the desired model configuration:
 
 ### Pretraining
-```
+```bash
 python3 polymerCL_Pretrain.py \
     --n_layers 3 \
     --hidden_dim 128 \
@@ -69,7 +70,7 @@ Main arguments:
 
 ### Fine-Tuning
 After pretraining, run the fine-tuning script for the target property:
-```
+```bash
 python3 polymerCL_FT_kfold.py \
     --pretrain_epoch 50 \
     --model_dir models_polymers \
@@ -94,13 +95,13 @@ Main arguments:
 
 ### Functional Group Attribution Analysis
 
-```
+```bash
 python FgAttrAnalysisSDEmultipro.py
 ```
 
 ### Structure Optimization
 
-```
+```bash
 python polymerDesignGAs.py
 ```
 
