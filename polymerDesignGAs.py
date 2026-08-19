@@ -345,7 +345,7 @@ if __name__ == "__main__":
 
     N_GEN = 50
     POP_SIZE = 40
-    RANDOM_SEED = 42
+    RANDOM_SEED = 2025
     # RANDOM_SEED = random.randint(1, 10000)
     RUN_COMPARE_GA_NSGA2 = True
     print(f'RANDOM_SEED: {RANDOM_SEED}')
