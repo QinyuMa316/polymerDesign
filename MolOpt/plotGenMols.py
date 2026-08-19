@@ -117,7 +117,7 @@ class PlotGenMols:
         plt.savefig(out_png, dpi=600)
         plt.close()
 
-    def visualize_gen_bests(self, mols_per_row=4, img_size=(800*3, 500*3), legend_font_size=48,):
+    def visualize_gen_bests(self, mols_per_row=4, img_size=(800*3, 500*3), legend_font_size=68,):
         """
         可视化各代唯一最佳分子，支持设置 legend 字体大小
         """
@@ -160,66 +160,145 @@ class PlotGenMols:
         else:
             print("[WARN] 未找到可用分子，未生成图像")
 
-    def visualize_pareto_frontier(self, mols_per_row=4, img_size=(800*3, 500*3), legend_font_size=48,):
+    # def visualize_pareto_frontier(self, mols_per_row=4, img_size=(800*3, 500*3), legend_font_size=48,):
+    #     """
+    #     可视化各代唯一最佳分子，支持设置 legend 字体大小
+    #     """
+    #     out_png = f"{self.dir_folder}/pareto_frontier_final.png"
+    #     with open(self.jsonl_pareto_frontier, "r", encoding="utf-8") as f:
+    #         records = [json.loads(line) for line in f]
+
+    #     uniq = collections.OrderedDict()
+    #     for rec in records:
+    #         smi = rec["smiles"]
+    #         sa_score = calSAScore(smi)
+    #         if smi not in uniq:
+    #             # uniq[smi] = (rec["generation"], rec["tg"], rec["eps"])
+    #             uniq[smi] = (rec["tg"], rec["eps"], sa_score)
+
+    #     # 按 sa_score 升序排序 uniq
+    #     # uniq_list = sorted(uniq.items(), key=lambda x: x[1][2])
+    #     # 按 k 升序排序 uniq # ———— 25-12-15修改
+    #     uniq_list = sorted(uniq.items(), key=lambda x: x[1][1])
+    #     # rec["tg"]（0）, rec["eps"]（1）, sa_score（2）
+
+    #     # print("=== sorted uniq_list by eps ===")
+    #     # for i, (smi, (tg, eps, sa_score)) in enumerate(uniq_list[:10]):
+    #     #     print(i, f"tg={tg:.1f}, k={eps:.3f}, sa={sa_score:.2f}")
+
+    #     # uniq: dict {
+    #     #       "smiles":[tg, eps, sascore],
+    #     #       }
+    #     # uniq_list: list [
+    #     #       ["smiles":[tg, eps, sascore]],
+    #     #       ]
+
+    #     mols, legends = [], []
+    #     # for smi, (gen, tg, eps) in uniq.items():
+    #     for smi, (tg, eps, sa_score) in uniq_list:
+    #         m = Chem.MolFromSmiles(smi)
+    #         if m is None:
+    #             continue
+    #         mols.append(m)
+    #         legends.append(f"Tg: {tg:.1f} K, k: {eps:.3f}, SAScore: {sa_score:.2f}")
+
+    #     if mols:
+    #         # 计算行数
+    #         n_mols = len(mols)
+    #         n_cols = mols_per_row
+    #         n_rows = (n_mols + n_cols - 1) // n_cols
+
+    #         drawer = rdMolDraw2D.MolDraw2DCairo(n_cols * img_size[0] // mols_per_row,
+    #                                             n_rows * img_size[1] // mols_per_row,
+    #                                             img_size[0] // mols_per_row,
+    #                                             img_size[1] // mols_per_row)
+    #         draw_opts = drawer.drawOptions()
+    #         draw_opts.legendFontSize = legend_font_size  # 设置 legend 字体大小
+
+    #         drawer.DrawMolecules(mols, legends=legends)
+    #         drawer.FinishDrawing()
+
+    #         img = Image.open(BytesIO(drawer.GetDrawingText()))
+    #         img.save(out_png)
+    #     else:
+    #         print("[WARN] 未找到可用分子，未生成图像")
+
+    def visualize_pareto_frontier(
+        self,
+        mols_per_row=4,
+        img_size=(1800, 1200),   # 每个分子的像素尺寸
+        legend_font_size=78,
+    ):
         """
-        可视化各代唯一最佳分子，支持设置 legend 字体大小
+        可视化各代唯一最佳分子
+        img_size 表示每个分子的绘图尺寸
         """
         out_png = f"{self.dir_folder}/pareto_frontier_final.png"
+
         with open(self.jsonl_pareto_frontier, "r", encoding="utf-8") as f:
             records = [json.loads(line) for line in f]
 
         uniq = collections.OrderedDict()
+
         for rec in records:
             smi = rec["smiles"]
             sa_score = calSAScore(smi)
+
             if smi not in uniq:
-                # uniq[smi] = (rec["generation"], rec["tg"], rec["eps"])
                 uniq[smi] = (rec["tg"], rec["eps"], sa_score)
 
-        # 按 sa_score 升序排序 uniq
-        # uniq_list = sorted(uniq.items(), key=lambda x: x[1][2])
-        # 按 k 升序排序 uniq # ———— 25-12-15修改
+        # 按 eps 升序
         uniq_list = sorted(uniq.items(), key=lambda x: x[1][1])
-        # rec["tg"]（0）, rec["eps"]（1）, sa_score（2）
-
-        # print("=== sorted uniq_list by eps ===")
-        # for i, (smi, (tg, eps, sa_score)) in enumerate(uniq_list[:10]):
-        #     print(i, f"tg={tg:.1f}, k={eps:.3f}, sa={sa_score:.2f}")
-
-        # uniq: dict {
-        #       "smiles":[tg, eps, sascore],
-        #       }
-        # uniq_list: list [
-        #       ["smiles":[tg, eps, sascore]],
-        #       ]
 
         mols, legends = [], []
-        # for smi, (gen, tg, eps) in uniq.items():
+
         for smi, (tg, eps, sa_score) in uniq_list:
             m = Chem.MolFromSmiles(smi)
             if m is None:
                 continue
+
             mols.append(m)
-            legends.append(f"Tg: {tg:.1f} K, k: {eps:.3f}, SAScore: {sa_score:.2f}")
+            legends.append(
+                f"Tg: {tg:.1f} K, k: {eps:.3f}, SA Score: {sa_score:.2f}"
+            )
 
         if mols:
-            # 计算行数
             n_mols = len(mols)
             n_cols = mols_per_row
             n_rows = (n_mols + n_cols - 1) // n_cols
 
-            drawer = rdMolDraw2D.MolDraw2DCairo(n_cols * img_size[0] // mols_per_row,
-                                                n_rows * img_size[1] // mols_per_row,
-                                                img_size[0] // mols_per_row,
-                                                img_size[1] // mols_per_row)
+            # 每个分子的实际尺寸
+            cell_width = img_size[0]
+            cell_height = img_size[1]
+
+            # 整张图的实际像素尺寸
+            total_width = n_cols * cell_width
+            total_height = n_rows * cell_height
+
+            drawer = rdMolDraw2D.MolDraw2DCairo(
+                total_width,
+                total_height,
+                cell_width,
+                cell_height,
+            )
+
             draw_opts = drawer.drawOptions()
-            draw_opts.legendFontSize = legend_font_size  # 设置 legend 字体大小
+            draw_opts.legendFontSize = legend_font_size
 
             drawer.DrawMolecules(mols, legends=legends)
             drawer.FinishDrawing()
 
             img = Image.open(BytesIO(drawer.GetDrawingText()))
-            img.save(out_png)
+
+            # dpi 主要是打印/排版元数据；
+            # 真正决定清晰度的是上面的像素尺寸
+            img.save(out_png, dpi=(300, 300))
+
+            print(
+                f"[INFO] 保存图片: {out_png}, "
+                f"resolution={total_width}x{total_height}"
+            )
+
         else:
             print("[WARN] 未找到可用分子，未生成图像")
 
@@ -338,8 +417,8 @@ class PlotGenMols:
 
         # ===== 图例 =====
         g.ax_joint.legend(loc='lower left'
-                          # , fontsize=11, frameon=True
-                          )
+                        # , fontsize=11, frameon=True
+                        )
 
         # ===== 标题 =====
         g.figure.suptitle(
@@ -368,8 +447,8 @@ class PlotGenMols:
         sm.set_array([])
         cbar = g.figure.colorbar(sm, cax=cax)
         cbar.set_label('Generation',
-                       # fontsize=12
-                       )
+                    # fontsize=12
+                    )
         # 可选：调整 colorbar 刻度朝向，减少占用空间
         cbar.ax.tick_params(direction='in', length=4)
 
@@ -413,54 +492,136 @@ class PlotGenMols:
 #     plotgm.plotScatterbyGenerations()
 
 
-def visualize_base_polymers(dir_folder, records,
-                            mols_per_row=4, img_size=(800*3, 500*3),
-                            legend_font_size=48,
-                            ):
+# def visualize_base_polymers(dir_folder, records,
+#                             mols_per_row=4, img_size=(800*3, 500*3),
+#                             legend_font_size=48,
+#                             ):
+#     """
+#     可视化各代唯一最佳分子，支持设置 legend 字体大小
+#     """
+#     out_png = f"{dir_folder}/base_polymers.png"
+#     # with open(self.jsonl_best, "r", encoding="utf-8") as f:
+#     #     records = [json.loads(line) for line in f]
+#     # {"smiles": "*c1c(C#N)c(F)c(Oc2ccc(-n3c(=O)c4c(C#N)c5c(=O)n(*)c(=O)c5c(C#N)c4c3=O)c(C#N)c2C#N)c(C#N)c1C#N",
+#     # "tg": 534.9876098632812,
+#     # "eps": 2.127666473388672,
+#     # "obj": [2.127666473388672, -534.9876098632812],
+#     # "rank": 0}
+#     uniq = collections.OrderedDict()
+#     for rec in records:
+#         smi = rec["smiles"]
+#         if smi not in uniq:
+#             # uniq[smi] = (rec["generation"], rec["tg"], rec["eps"])
+#             uniq[smi] = (rec["id"], rec["tg"], rec["eps"], rec["sa"])
+
+#     mols, legends = [], []
+#     for smi, (id, tg, eps, sa) in uniq.items():
+#         m = Chem.MolFromSmiles(smi)
+#         if m is None:
+#             continue
+#         mols.append(m)
+#         legends.append(f"ID: {id}, Tg: {tg:.1f} K, k: {eps:.3f}, SAScore: {sa:.2f}")
+
+#     if mols:
+#         # 计算行数
+#         n_mols = len(mols)
+#         n_cols = mols_per_row
+#         n_rows = (n_mols + n_cols - 1) // n_cols
+
+#         drawer = rdMolDraw2D.MolDraw2DCairo(n_cols * img_size[0] // mols_per_row,
+#                                             n_rows * img_size[1] // mols_per_row,
+#                                             img_size[0] // mols_per_row,
+#                                             img_size[1] // mols_per_row)
+#         draw_opts = drawer.drawOptions()
+#         draw_opts.legendFontSize = legend_font_size  # 设置 legend 字体大小
+
+#         drawer.DrawMolecules(mols, legends=legends)
+#         drawer.FinishDrawing()
+
+#         img = Image.open(BytesIO(drawer.GetDrawingText()))
+#         img.save(out_png)
+#     else:
+#         print("[WARN] 未找到可用分子，未生成图像")
+
+def visualize_base_polymers(
+    dir_folder,
+    records,
+    mols_per_row=4,
+    img_size=(1800, 1200),   # 每个分子的像素尺寸
+    legend_font_size=68,
+):
     """
-    可视化各代唯一最佳分子，支持设置 legend 字体大小
+    可视化基础聚合物分子图
+    img_size: 每个分子的绘图尺寸 (width, height)
     """
-    out_png = f"{dir_folder}/base_polymers.png"
-    # with open(self.jsonl_best, "r", encoding="utf-8") as f:
-    #     records = [json.loads(line) for line in f]
-    # {"smiles": "*c1c(C#N)c(F)c(Oc2ccc(-n3c(=O)c4c(C#N)c5c(=O)n(*)c(=O)c5c(C#N)c4c3=O)c(C#N)c2C#N)c(C#N)c1C#N",
-    # "tg": 534.9876098632812,
-    # "eps": 2.127666473388672,
-    # "obj": [2.127666473388672, -534.9876098632812],
-    # "rank": 0}
+
+    out_png = os.path.join(dir_folder, "base_polymers.png")
+    out_svg = os.path.join(dir_folder, "base_polymers.svg")  # 可选：同时保存矢量图
+
     uniq = collections.OrderedDict()
     for rec in records:
         smi = rec["smiles"]
         if smi not in uniq:
-            # uniq[smi] = (rec["generation"], rec["tg"], rec["eps"])
             uniq[smi] = (rec["id"], rec["tg"], rec["eps"], rec["sa"])
 
     mols, legends = [], []
-    for smi, (id, tg, eps, sa) in uniq.items():
+    for smi, (id_, tg, eps, sa) in uniq.items():
         m = Chem.MolFromSmiles(smi)
         if m is None:
             continue
         mols.append(m)
-        legends.append(f"ID: {id}, Tg: {tg:.1f} K, k: {eps:.3f}, SAScore: {sa:.2f}")
+        legends.append(f"ID: {id_}, Tg: {tg:.1f} K, k: {eps:.3f}, SA Score: {sa:.2f}")
 
     if mols:
-        # 计算行数
+        # 计算布局
         n_mols = len(mols)
         n_cols = mols_per_row
         n_rows = (n_mols + n_cols - 1) // n_cols
 
-        drawer = rdMolDraw2D.MolDraw2DCairo(n_cols * img_size[0] // mols_per_row,
-                                            n_rows * img_size[1] // mols_per_row,
-                                            img_size[0] // mols_per_row,
-                                            img_size[1] // mols_per_row)
+        # 每个分子的像素尺寸
+        cell_width = img_size[0]
+        cell_height = img_size[1]
+
+        # 整张图总像素尺寸
+        total_width = n_cols * cell_width
+        total_height = n_rows * cell_height
+
+        # ---------- 1. 保存高清 PNG ----------
+        drawer = rdMolDraw2D.MolDraw2DCairo(
+            total_width,
+            total_height,
+            cell_width,
+            cell_height
+        )
         draw_opts = drawer.drawOptions()
-        draw_opts.legendFontSize = legend_font_size  # 设置 legend 字体大小
+        draw_opts.legendFontSize = legend_font_size
 
         drawer.DrawMolecules(mols, legends=legends)
         drawer.FinishDrawing()
 
         img = Image.open(BytesIO(drawer.GetDrawingText()))
-        img.save(out_png)
+        img.save(out_png, dpi=(300, 300))  # dpi 主要用于打印，真正清晰度取决于像素尺寸
+
+        # ---------- 2. 可选：同时保存 SVG 矢量图 ----------
+        drawer_svg = rdMolDraw2D.MolDraw2DSVG(
+            total_width,
+            total_height,
+            cell_width,
+            cell_height
+        )
+        draw_opts_svg = drawer_svg.drawOptions()
+        draw_opts_svg.legendFontSize = legend_font_size
+
+        drawer_svg.DrawMolecules(mols, legends=legends)
+        drawer_svg.FinishDrawing()
+
+        svg = drawer_svg.GetDrawingText()
+        with open(out_svg, "w", encoding="utf-8") as f:
+            f.write(svg)
+
+        print(f"[INFO] PNG saved to: {out_png}")
+        print(f"[INFO] SVG saved to: {out_svg}")
+        print(f"[INFO] Resolution: {total_width} x {total_height}")
+
     else:
         print("[WARN] 未找到可用分子，未生成图像")
-

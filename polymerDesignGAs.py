@@ -501,9 +501,9 @@ if __name__ == "__main__":
                 plotgm.plotKDEbyGenerations('eps')
                 plotgm.plotScatterbyGenerations()
                 plotgm.plotScatterWithKDEbyGenerations(id=id, version=cur_version)
-                plotgm.visualize_gen_bests(mols_per_row=4)
+                plotgm.visualize_gen_bests(mols_per_row=7)
                 if 'NS' in cur_version:
-                    plotgm.visualize_pareto_frontier(mols_per_row=5)
+                    plotgm.visualize_pareto_frontier(mols_per_row=7)
             continue
 
         # ========= 原有单算法运行逻辑，保留备用 =========
@@ -567,9 +567,9 @@ if __name__ == "__main__":
         plotgm.plotKDEbyGenerations('eps')
         plotgm.plotScatterbyGenerations()
         plotgm.plotScatterWithKDEbyGenerations(id=id, version=version)
-        plotgm.visualize_gen_bests(mols_per_row=4)
+        plotgm.visualize_gen_bests(mols_per_row=7)
         if 'NS' in version:
-            plotgm.visualize_pareto_frontier(mols_per_row=5)
+            plotgm.visualize_pareto_frontier(mols_per_row=7)
 
     opt_results_df = pd.DataFrame(opt_results)
     os.makedirs(main_dir, exist_ok=True)
