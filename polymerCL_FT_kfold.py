@@ -32,7 +32,7 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--pretrain_epoch', type=int, required=True)
-    parser.add_argument('--model_dir', type=str, required=True)
+    parser.add_argument('--model_dir_pre', type=str, required=True)
     parser.add_argument('--target', type=str, required=True)
 
     parser.add_argument('--n_layers', type=int, default=3)
@@ -41,8 +41,8 @@ def parse_arguments():
     parser.add_argument('--lr', type=float, default=1e-5)
 
     parser.add_argument('--epoch_pre', type=int, default=50)
-    parser.add_argument('--batch_size_pre', type=int, default=256)
-    parser.add_argument('--model_dir', type=str, required=True)
+    parser.add_argument('--batch_size', type=int, default=256)
+    parser.add_argument('--n_enum', type=int, default=12)
 
     return parser.parse_args()
 
@@ -51,9 +51,10 @@ if __name__ == '__main__':
     args = parse_arguments()
 
     PRE_TRAIN_EPOCH = args.pretrain_epoch
-    model_dir = args.model_dir
+    model_dir_pre = args.model_dir_pre
     target_col = args.target
     # PRE_TRAIN_EPOCH = 50
+    model_dir_pre = f'models_polymer'
     # model_dir = 'models_polymers'
     # target = 'Tg'
 
@@ -93,8 +94,8 @@ if __name__ == '__main__':
     training = True
     patience = 20
     testing = True
-    model_dir_pre = f'models_polymer'
-    model_dir = f'models_polymer_10fold_{target_col}_seed{seed}'
+
+    model_dir = f'{model_dir_pre}_10fold_{target_col}_seed{seed}'
     os.makedirs(model_dir, exist_ok=True)
 
     logging.basicConfig(

@@ -619,7 +619,7 @@ if __name__ == '__main__':
     clean_outliers = True
 
     n_core = 4
-    data_path = 'polyDesign_data/data_train/PI1M.csv'
+    data_path = 'polyDesign_data/data_train/PI1M_unique.csv'
     # attrfg_dir = 'attrfg1m'  # without NO2
     #【SDE->SME】使用独立输出目录，避免误读或覆盖已有的 SDE 删除归因结果。
     attrfg_dir = 'attr1m_sme'  # without NO2

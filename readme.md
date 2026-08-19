@@ -57,7 +57,7 @@ python3 polymerCL_Pretrain.py \
     --lr_pre 1e-4 \
     --epoch_pre 50 \
     --batch_size_pre 128 \
-    --model_dir models_polymers
+    --model_dir models_polymer
 ```
 Main arguments:
 + `--n_layers`: Number of graph neural network layers.
@@ -73,7 +73,7 @@ After pretraining, run the fine-tuning script for the target property:
 ```bash
 python3 polymerCL_FT_kfold.py \
     --pretrain_epoch 50 \
-    --model_dir models_polymers \
+    --model_dir_pre models_polymer \
     --target Tg \
     --n_layers 3 \
     --hidden_dim 128 \

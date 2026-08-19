@@ -486,10 +486,10 @@ if __name__ == '__main__':
     clean_outliers = True
 
     n_core = 4
-    data_path = 'polyDesign_data/data_train/PI1M.csv'
-    attrfg_dir = 'attr1m_sde_3attr'  # without NO2
+    data_path = 'polyDesign_data/data_train/PI1M_unique.csv'
+    attrfg_dir = 'attr1m_sde'  # without NO2
     os.makedirs(attrfg_dir, exist_ok=True)
-    model_dir = 'models_polymer_3attr'
+    model_dir = 'models_polymer'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     num_layers = 3
