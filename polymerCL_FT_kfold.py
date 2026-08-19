@@ -29,12 +29,19 @@ def format_elapsed_time(elapsed_seconds):
     return f'{hours:02d}:{minutes:02d}:{seconds:02d}'
 
 def parse_arguments():
-    """
-    Parse command-line arguments.
-    """
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--target', type=float, default=1e-4)
     parser.add_argument('--pretrain_epoch', type=int, required=True)
+    parser.add_argument('--model_dir', type=str, required=True)
+    parser.add_argument('--target', type=str, required=True)
+
+    parser.add_argument('--n_layers', type=int, default=3)
+    parser.add_argument('--hidden_dim', type=int, default=128)
+    parser.add_argument('--dropout', type=float, default=0.02)
+    parser.add_argument('--lr', type=float, default=1e-5)
+
+    parser.add_argument('--epoch_pre', type=int, default=50)
+    parser.add_argument('--batch_size_pre', type=int, default=256)
     parser.add_argument('--model_dir', type=str, required=True)
 
     return parser.parse_args()
@@ -42,22 +49,36 @@ def parse_arguments():
 if __name__ == '__main__':
 
     args = parse_arguments()
-    target_col = args.target
+
     PRE_TRAIN_EPOCH = args.pretrain_epoch
     model_dir = args.model_dir
+    target_col = args.target
+    # PRE_TRAIN_EPOCH = 50
+    # model_dir = 'models_polymers'
+    # target = 'Tg'
+
+    n_layers = args.n_layers
+    hidden_dim = args.hidden_dim
+    dropout = args.dropout
+    lr = args.lr
+    batch_size = args.batch_size
+    n_enum = args.n_enum
 
     program_start_time = time.time()
 
+    # n_layers = 3
+    # hidden_dim = 128
+    num_heads = 4
+    # dropout = 0.2
+    # n_enum = 12
+    # batch_size = 4
 
     seed = random.randint(1, 1000)
     # seed = 221
     # target_col = 'EPS'
     # target_col = 'Tg'
-    # PRE_TRAIN_EPOCH = 50
     # Seed: 221, Training: True, Testing: True
 
-    n_enum = 12
-    batch_size = 4
 
     # tg - seed = 56, eps - seed = 88
     # if target_col == 'Tg':
@@ -98,10 +119,7 @@ if __name__ == '__main__':
     # model_dir = 'models_polymer'
     # os.makedirs(model_dir, exist_ok=True)
     # ----------------------------------------------------------------------------------------
-    n_layers = 3
-    hidden_dim = 128
-    num_heads = 4
-    dropout = 0.2
+
     logging.info(f'Model Architecture: Num Layer: {n_layers}, Hidden Dim: {hidden_dim}, Num Heads: {num_heads}')
     # === k fold ===
     # ----------------------------------------------------------------------------------------

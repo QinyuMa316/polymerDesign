@@ -74,7 +74,7 @@ After pretraining, run the fine-tuning script for the target property:
 python3 polymerCL_FT_kfold.py \
     --pretrain_epoch 50 \
     --model_dir models_polymers \
-    --target EPS \
+    --target Tg \
     --n_layers 3 \
     --hidden_dim 128 \
     --dropout 0.02 \
