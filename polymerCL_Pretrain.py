@@ -7,6 +7,7 @@ import torch
 from MolOpt.utils import set_seed
 from MolOpt.GNNtrain import train
 import argparse
+import random
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -23,6 +24,9 @@ def parse_arguments():
     parser.add_argument('--epoch_pre', type=int, default=50)
     parser.add_argument('--batch_size_pre', type=int, default=256)
     parser.add_argument('--model_dir', type=str, required=True)
+    parser.add_argument('--contrastive', type=str, default='view12',
+                        choices=['view1', 'view2', 'view12', False])
+    parser.add_argument('--seed', type=int, default=42)
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -31,8 +35,12 @@ if __name__ == '__main__':
     lr_pre = args.lr_pre
     batch_size_pre = args.batch_size_pre
     model_dir = args.model_dir
-
-    seed = 42
+    contrastive = args.contrastive
+    # seed = 42
+    if args.seed is not None:
+        seed = args.seed
+    else:
+        seed = random.randint(1, 1000)
     set_seed(seed=seed)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -70,7 +78,8 @@ if __name__ == '__main__':
     pre_loader = MolDataLoader(smiles_list_pre, [0] * len(smiles_list_pre),  # 伪标签
                                batch_size=batch_size_pre, shuffle=True)
     # 使用数据增强生成多个视图
-    train_loader_pre, _, _ = pre_loader.get_split_loaders_cl(test_size=0, val_size=0, )
+    train_loader_pre, _, _ = pre_loader.get_split_loaders_cl(test_size=0, val_size=0,
+                                                             contrastive=contrastive)
     # ----------------------------------------------------------------------------------------
 
     pre_model_path = f'{model_dir}/pretrain_encoder_{PRE_EPOCH}epoch.pth'

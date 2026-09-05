@@ -5,18 +5,25 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GroupShuffleSplit
 import numpy as np
 import warnings
+from torch_geometric.data import Batch
 warnings.filterwarnings("ignore")
 
 class MolDataset(Dataset):
     def __init__(self, smiles_list, label_list,
-                 transform=None,
                  contrastive = False,
+                 transform=None,
                  ):
+        """
+        contrastive option:
+        - 'view1': 只使用随机 SMILES 作为增强视图
+        - 'view2': 只使用结构级增强（drop/mask）作为增强视图
+        - 'view12': 先随机 SMILES，再在其上做结构级增强（drop/mask），叠加两种随机性
+        - False: 不使用对比学习，返回单个图数据
+        """
         self.smiles_list = smiles_list
         self.label_list = label_list
         self.transform = transform
         self.contrastive = contrastive
-
     def __len__(self):
         return len(self.smiles_list)
 
@@ -53,8 +60,15 @@ class MolDataset(Dataset):
 
         if self.contrastive:
             # 对比学习模式：返回两个增强视图
-            view1 = self._create_view12(mol)
-            view2 = self._create_view12(mol)
+            if self.contrastive == 'view1':
+                view1 = self._create_view1(mol)
+                view2 = self._create_view1(mol)
+            elif self.contrastive == 'view2':
+                view1 = self._create_view2(mol)
+                view2 = self._create_view2(mol)
+            elif self.contrastive == 'view12':
+                view1 = self._create_view12(mol)
+                view2 = self._create_view12(mol)
             return view1, view2
         else:
             # 监督学习模式
@@ -212,7 +226,9 @@ class MolDataLoader:
         all_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
         return all_loader
 
-    def get_split_loaders_cl(self, test_size=0.1, val_size=0.1):
+    def get_split_loaders_cl(self, test_size=0.1, val_size=0.1,
+                            contrastive='view12',
+                            ):
         """
         获取数据加载器
         :return: 训练、验证、测试集的 DataLoader
@@ -251,11 +267,14 @@ class MolDataLoader:
         ###
 
         # 创建数据集
-        self.train_dataset = MolDataset(smiles_train, labels_train, contrastive=True)
-        self.val_dataset = MolDataset(smiles_val, labels_val, contrastive=True)
-        self.test_dataset = MolDataset(smiles_test, labels_test, contrastive=True)
 
-        from torch_geometric.data import Batch
+        self.train_dataset = MolDataset(smiles_train, labels_train,
+                                      contrastive=contrastive)
+        self.val_dataset = MolDataset(smiles_val, labels_val,
+                                      contrastive=contrastive)
+        self.test_dataset = MolDataset(smiles_test, labels_test,
+                                      contrastive=contrastive)
+
 
         def contrastive_collate(batch):
             view1 = [data[0] for data in batch]
@@ -345,70 +364,4 @@ class MolDataLoader:
         test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
         return train_loader, val_loader, test_loader
 
-#
-# from sklearn.model_selection import KFold
-#
-# class KFoldMolDataLoader:
-#     def __init__(self, smiles_list, label_list,
-#                  n_splits,
-#                  batch_size=32, shuffle=True):
-#         self.smiles_list = smiles_list
-#         self.label_list = label_list
-#         self.batch_size = batch_size
-#         self.shuffle = shuffle
-#         self.n_splits = n_splits
-#         self.kf = KFold(n_splits=n_splits, shuffle=shuffle)
-#
-#     def enumerate_smiles(self, smi: str, n: int = 8):
-#         """
-#         给定 canonical SMILES，返回 n 条随机 SMILES（含自身），去重
-#         """
-#         mol = Chem.MolFromSmiles(smi)
-#         if mol is None:
-#             return []  # 无法解析的直接跳过
-#         rand_set = {Chem.MolToSmiles(mol, doRandom=True) for _ in range(n)}
-#         rand_set.add(Chem.MolToSmiles(mol, canonical=True))  # 保障含原始
-#         return list(rand_set)
-#
-#     def _augment(self, S, L, n_enum):
-#         aug_s, aug_l = [], []
-#         for s, lab in zip(S, L):
-#             for a in self.enumerate_smiles(s, n_enum):
-#                 aug_s.append(a)
-#                 aug_l.append(lab)
-#         return aug_s, aug_l
-#
-#     def get_fold_loaders(self, fold_idx, n_enum = 8):
-#
-#         splits = list(self.kf.split(self.smiles_list))
-#         train_idx, test_idx = splits[fold_idx]
-#
-#         # 获取训练集和测试集
-#         smiles_train = [self.smiles_list[i] for i in train_idx]
-#         labels_train = [self.label_list[i] for i in train_idx]
-#         smiles_test = [self.smiles_list[i] for i in test_idx]
-#         labels_test = [self.label_list[i] for i in test_idx]
-#
-#         # 从训练集中拆分验证集 (10%)
-#         smiles_train, smiles_val, labels_train, labels_val = train_test_split(
-#             smiles_train, labels_train, test_size=0.1, random_state=42, shuffle=self.shuffle)
-#
-#         if n_enum > 0:
-#             smiles_train, labels_train = self._augment(smiles_train, labels_train, n_enum)
-#             smiles_val, labels_val = self._augment(smiles_val, labels_val, n_enum)
-#             smiles_test, labels_test = self._augment(smiles_test, labels_test, n_enum)
-#
-#         # 创建数据集和DataLoader
-#         train_dataset = MolDataset(smiles_train, labels_train, contrastive=False)
-#         val_dataset = MolDataset(smiles_val, labels_val, contrastive=False)
-#         test_dataset = MolDataset(smiles_test, labels_test, contrastive=False)
-#
-#         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=self.shuffle)
-#         val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
-#         test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
-#
-#         return train_loader, val_loader, test_loader
-#
-#
-#
 

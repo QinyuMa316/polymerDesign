@@ -340,12 +340,24 @@ def compare_ga_nsga2_metrics(ga_dir: str, nsga_dir: str, out_dir: str) -> dict:
 
 # ===【计算评价指标】==== 结束
 
+import argparse
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=None)
+    return parser.parse_args()
 
 if __name__ == "__main__":
 
+    args = parse_arguments()
+    if args.seed is not None:
+        RANDOM_SEED = args.seed
+    else:
+        RANDOM_SEED = random.randint(1, 1000)
+    # RANDOM_SEED = 2025
     N_GEN = 50
     POP_SIZE = 40
-    RANDOM_SEED = 2025
+
     # RANDOM_SEED = random.randint(1, 10000)
     RUN_COMPARE_GA_NSGA2 = True
     print(f'RANDOM_SEED: {RANDOM_SEED}')

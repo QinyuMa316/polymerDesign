@@ -48,3 +48,10 @@ if __name__ == "__main__":
     # Original number of records: 995799
     # Number of invalid SMILES: 7024
     # Number of records after canonicalization and deduplication: 988775
+
+    # Target: Tg
+    # Original number of records: 359
+    # Number of records after canonicalization and deduplication: 275
+    # Target: EPS
+    # Original number of records: 387
+    # Number of records after canonicalization and deduplication: 387

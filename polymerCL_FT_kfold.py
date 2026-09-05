@@ -40,10 +40,10 @@ def parse_arguments():
     parser.add_argument('--dropout', type=float, default=0.02)
     parser.add_argument('--lr', type=float, default=1e-5)
 
-    parser.add_argument('--epoch_pre', type=int, default=50)
+    # parser.add_argument('--epoch_pre', type=int, default=50)
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--n_enum', type=int, default=12)
-
+    parser.add_argument('--seed', type=int, default=None)
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -54,14 +54,14 @@ if __name__ == '__main__':
     model_dir_pre = args.model_dir_pre
     target_col = args.target
     # PRE_TRAIN_EPOCH = 50
-    model_dir_pre = f'models_polymer'
+    # model_dir_pre = f'models_polymer'
     # model_dir = 'models_polymers'
     # target = 'Tg'
 
     n_layers = args.n_layers
     hidden_dim = args.hidden_dim
     dropout = args.dropout
-    lr = args.lr
+    LR = args.lr
     batch_size = args.batch_size
     n_enum = args.n_enum
 
@@ -74,7 +74,12 @@ if __name__ == '__main__':
     # n_enum = 12
     # batch_size = 4
 
-    seed = random.randint(1, 1000)
+    # seed = random.randint(1, 1000)
+    if args.seed is not None:
+        seed = args.seed
+    else:
+        seed = random.randint(1, 1000)
+
     # seed = 221
     # target_col = 'EPS'
     # target_col = 'Tg'
@@ -109,7 +114,7 @@ if __name__ == '__main__':
 
     logging.info(f'Seed: {seed}, Training: {training}, Testing: {testing}')
 
-    LR = 1e-5
+    # LR = 1e-5
     EPOCH = 1000
     WD = 1e-5
     # batch_size = 4
@@ -126,7 +131,7 @@ if __name__ == '__main__':
     # ----------------------------------------------------------------------------------------
 
     smiles_col = 'SMILES'
-    data_path = f'PolyDesign_data/data_train/{target_col}_combined_unique.csv'
+    data_path = f'polyDesign_data/data_train/{target_col}_combined_unique.csv'
     logging.info(f'Target: {target_col}')
     data = pd.read_csv(data_path)
     smiles_list = data[smiles_col].tolist()
