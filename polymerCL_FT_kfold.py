@@ -85,16 +85,6 @@ if __name__ == '__main__':
     # target_col = 'Tg'
     # Seed: 221, Training: True, Testing: True
 
-
-    # tg - seed = 56, eps - seed = 88
-    # if target_col == 'Tg':
-    #     seed = 56 # - 0.74
-    # elif target_col == 'EPS':
-    #     seed = 78 # 88
-    # else:
-    #     seed = 42
-
-    # seed = 812
     set_seed(seed=seed)
     training = True
     patience = 20
@@ -140,10 +130,23 @@ if __name__ == '__main__':
     data_loader = MolDataLoader(smiles_list, label_list, batch_size=batch_size, shuffle=True)
     unique_smiles = np.array(list(dict.fromkeys(smiles_list)))
     kf = KFold(n_splits=10, shuffle=True, random_state=seed)
-    def make_loader(idx, shuffle=False):
-        s, l = [smiles_list[i] for i in idx], [label_list[i] for i in idx]
-        if n_enum > 0: s, l = data_loader._augment(s, l, n_enum)
-        return DataLoader(MolDataset(s, l, contrastive=False), batch_size=batch_size, shuffle=shuffle)
+    # def make_loader(idx, shuffle=False):
+    #     s, l = [smiles_list[i] for i in idx], [label_list[i] for i in idx]
+    #     if n_enum > 0: s, l = data_loader._augment(s, l, n_enum)
+    #     return DataLoader(MolDataset(s, l, contrastive=False),
+    #                       batch_size=batch_size, shuffle=shuffle)
+    def make_loader(idx, shuffle=False, augment=False):
+        s = [smiles_list[i] for i in idx]
+        l = [label_list[i] for i in idx]
+
+        if augment and n_enum > 0:
+            s, l = data_loader._augment(s, l, n_enum)
+
+        return DataLoader(
+            MolDataset(s, l, contrastive=False),
+            batch_size=batch_size,
+            shuffle=shuffle
+        )
     fold_metrics = []
     # === k fold ===
     # plot_label_distributions(data_loader, target_col)
@@ -172,7 +175,10 @@ if __name__ == '__main__':
         train_idx = np.array([i for i in train_val_idx if smiles_list[i] in train_groups])
         val_idx = np.array([i for i in train_val_idx if smiles_list[i] in val_groups])
         test_idx = np.array([i for i, s in enumerate(smiles_list) if s in test_groups])
-        train_loader, val_loader, test_loader = make_loader(train_idx, True), make_loader(val_idx), make_loader(test_idx)
+        # train_loader, val_loader, test_loader = make_loader(train_idx, True), make_loader(val_idx), make_loader(test_idx)
+        train_loader = make_loader(train_idx, shuffle=True, augment=True)
+        val_loader = make_loader(val_idx, shuffle=False, augment=False)
+        test_loader = make_loader(test_idx, shuffle=False, augment=False)
         fold_model_path = model_path.replace('.pth', f'_fold{fold}.pth')
         model = GATModel(hidden_dim=hidden_dim, dropout=dropout, num_layers=n_layers)
         if not os.path.exists(fold_model_path):
