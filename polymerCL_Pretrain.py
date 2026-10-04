@@ -21,7 +21,7 @@ def parse_arguments():
     parser.add_argument('--dropout', type=float, default=0.02)
     parser.add_argument('--lr_pre', type=float, default=1e-4)
 
-    parser.add_argument('--epoch_pre', type=int, default=50)
+    parser.add_argument('--pretrain_epoch', type=int, default=50)
     parser.add_argument('--batch_size_pre', type=int, default=256)
     parser.add_argument('--model_dir', type=str, required=True)
     parser.add_argument('--contrastive', type=str, default='view12',
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     # ----------------------------------------------------------------------------------------
     PRETRAIN = True
     # PRE_EPOCH = 100
-    PRE_EPOCH = args.epoch_pre
+    PRE_EPOCH = args.pretrain_epoch
     wd_pre = 1e-5
     # lr_pre = 1e-4
     # batch_size_pre = 256
