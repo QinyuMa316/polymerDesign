@@ -64,7 +64,7 @@ python3 polymerCL_Pretrain.py \
     --lr_pre 1e-4 \
     --batch_size_pre 128 \
     --contrastive 'view1' \
-    --seed None
+    --seed 221
 ```
 Main arguments:
 + `--pretrain_epoch`: Number of pretraining epochs.
@@ -93,7 +93,7 @@ python3 polymerCL_FT_kfold.py \
     --lr 1e-5 \
     --batch_size 4 \
     --n_enum 12 \
-    --seed None
+    --seed 221
 ```
 Main arguments:
 + `--pretrain_epoch`: Pretraining checkpoint epoch to load.
@@ -116,7 +116,7 @@ python FgAttrAnalysisSDEmultipro.py
 ### Structure Optimization
 
 ```
-python3 polymerDesignGAs.py --seed None
+python3 polymerDesignGAs.py --seed N2025
 ```
 - `--seed`: Random seed. If not specified or specified as `None`, a random integer between 1 and 1000 is selected.
 
