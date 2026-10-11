@@ -116,7 +116,7 @@ python FgAttrAnalysisSDEmultipro.py
 ### Structure Optimization
 
 ```
-python3 polymerDesignGAs.py --seed N2025
+python3 polymerDesignGAs.py --seed 2025
 ```
 - `--seed`: Random seed. If not specified or specified as `None`, a random integer between 1 and 1000 is selected.
 
