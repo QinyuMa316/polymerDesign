@@ -1,0 +1,12 @@
+    """
+    v1:
+    添加对最终非支配解集计算 hypervolume、Pareto coverage、spacing（最终的）
+    v2:
+    添加对最终非支配解集计算 hypervolume、Pareto coverage、spacing（最终的，以及每个generation的）
+    对于每个generation的要画出 hypervolume、Pareto coverage、spacing这几个参数的变化趋势。
+    在main代码，在某指定随机种子下，同时执行GA和NSGA2最后进行汇总hypervolume、Pareto coverage、spacing进行比较
+    v3:
+    为什么最终的opt_results.csv没有包含原来的
+    Avg Tg change (%),Avg k change (%),Avg SAScore,Avg Delta SAScore这些信息，
+    请你添加进去（包括GA的和NSGA-II的）
+    """
