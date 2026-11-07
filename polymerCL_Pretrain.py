@@ -23,7 +23,7 @@ def parse_arguments():
 
     parser.add_argument('--pretrain_epoch', type=int, default=50)
     parser.add_argument('--batch_size_pre', type=int, default=256)
-    parser.add_argument('--model_dir', type=str, required=True)
+    parser.add_argument('--model_dir_pre', type=str, required=True)
     parser.add_argument('--contrastive', type=str, default='view12',
                         choices=['view1', 'view2', 'view12', False])
     parser.add_argument('--seed', type=int, default=42)
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     args = parse_arguments()
     lr_pre = args.lr_pre
     batch_size_pre = args.batch_size_pre
-    model_dir = args.model_dir
+    model_dir_pre = args.model_dir_pre
     contrastive = args.contrastive
     # seed = 42
     if args.seed is not None:
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Using device: {device}')
-    os.makedirs(model_dir, exist_ok=True)
+    os.makedirs(model_dir_pre, exist_ok=True)
     # ----------------------------------------------------------------------------------------
     # n_layers = 3
     # hidden_dim = 128
@@ -82,7 +82,7 @@ if __name__ == '__main__':
                                                              contrastive=contrastive)
     # ----------------------------------------------------------------------------------------
 
-    pre_model_path = f'{model_dir}/pretrain_encoder_{PRE_EPOCH}epoch.pth'
+    pre_model_path = f'{model_dir_pre}/pretrain_encoder_{PRE_EPOCH}epoch.pth'
     # if os.path.exists(pre_model_path):
     #     checkpoint = torch.load(pre_model_path, map_location=device)
     #     model.load_state_dict(checkpoint['model_state_dict'])

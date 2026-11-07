@@ -44,7 +44,7 @@ frag_smiles = [
     "O",                # -OH
     "[NH2]",            # -NH2
     "S",                # -SH  （二价硫；连接后为 -S-）
-    "[N+](=O)[O-]",     # -NO2
+    # "[N+](=O)[O-]",     # -NO2
     "C#N",              # -CN
     "C(=O)O",           # -COOH
     "C=O",              # -CHO

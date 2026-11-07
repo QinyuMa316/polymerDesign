@@ -78,7 +78,7 @@ Main arguments:
   +  `view1` to generate two independently randomized SMILES representations of each molecule. 
   + `view2` applies atom/bond dropping or feature masking.
   + `view12` combines SMILES randomization with one randomly selected graph-level augmentation.
-- `--seed`: Random seed. If not specified or specified as `None`, a random integer between 1 and 1000 is selected.
++ `--seed`: Random seed (integer). If omitted, a random integer between 1 and 1000 is selected.
 
 ### Fine-Tuning
 After pretraining, run the fine-tuning script for the target property:
@@ -97,7 +97,7 @@ python3 polymerCL_FT_kfold.py \
 ```
 Main arguments:
 + `--pretrain_epoch`: Pretraining checkpoint epoch to load.
-+ `--model_dir`: Directory containing the pretrained model checkpoints
++ `--model_dir_pre`: Directory containing the pretrained model checkpoints
 + `--target`: Target property for fine-tuning. Supported values are EPS and Tg.
 + `--n_layers`: Number of graph neural network layers.
 + `--hidden_dim`: Dimension of the hidden representations.
@@ -105,7 +105,7 @@ Main arguments:
 + `--lr`: Learning rate for fine-tuning.
 + `--batch_size`: Batch size used during fine-tuning.
 + `--n_enum`: Number of molecular enumerations used for data augmentation.
-- `--seed`: Random seed. If not specified or specified as `None`, a random integer between 1 and 1000 is selected.
++ `--seed`: Random seed (integer). If omitted, a random integer between 1 and 1000 is selected.
 
 ### Substituent Attribution Analysis
 
